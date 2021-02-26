@@ -1,0 +1,57 @@
+{
+  "name": "stream-sac",
+  "version": "1.0.0",
+  "description": "Utility functions",
+  "license": "CC0-1.0",
+  "type": "module",
+  "main": "source/html/escapeHtmlStream.js",
+  "scripts": {
+    "test": "ava",
+    "perftest": "node ./tests/performance/deepCopy.js",
+    "lint-fix": "eslint --ignore-path .gitignore --fix .",
+    "lint": "eslint --ignore-path .gitignore ."
+  },
+  "devDependencies": {
+    "ava": "^3.14.0",
+    "eslint": "^7.16.0",
+    "eslint-config-red": "^1.8.1",
+    "leistung": "^5.0.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "red"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module",
+      "ecmaFeatures": {}
+    },
+    "env": {
+      "es2021": true,
+      "browser": true
+    }
+  },
+  "ava": {
+    "nodeArguments": [
+      "--experimental-modules"
+    ],
+    "files": [
+      "tests/specification/**"
+    ]
+  },
+  "files": [
+    "source",
+    "readme.md",
+    "license.txt",
+    "changelog.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/GrosSacASac/stream-sac.git"
+  },
+  "keywords": [
+    "stream",
+    "html",
+    "escape"
+  ]
+}
