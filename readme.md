@@ -10,12 +10,20 @@ Stream related functions
 
 The source code is the documentation.
 
-## escapeHtmlStream.js
+## concatAsStream.js
 
 ```js
 import {
-    escapeHtmlStream,
-} from "stream-sac/source/escapeHtmlStream.js";
+    concatAsStream,
+} from "stream-sac/source/concatAsStream.js";
+```
+
+## concatAsStream.js
+
+```js
+import {
+    streamifyStringFunction,
+} from "stream-sac/source/streamifyStringFunction.js";
 ```
 
 
