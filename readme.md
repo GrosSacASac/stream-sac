@@ -38,6 +38,3 @@ import {
 
 [CC0](./license.txt)
 
-### Related
-
- * [html-escaper](https://www.npmjs.com/package/html-escaper)
