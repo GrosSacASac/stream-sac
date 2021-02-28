@@ -6,6 +6,10 @@ const isStream = (x) => {
     return x && typeof x !== `string` && typeof x.destroy === `function`; 
 }
 
+const isPromise = (x) => {
+    return x && typeof x === `object` && typeof x.then === `function`; 
+}
+
 const concatAsStream = (things, options = {}) => {
     let i = 0;
     let j = 0;
@@ -23,6 +27,17 @@ const concatAsStream = (things, options = {}) => {
                 this.push(null);
                 return;
             }
+            if (isPromise(currentThing)) {
+                console.log("pro")
+                if (!attachedMap.has(currentThing)) {
+                    currentThing.then(value => {
+                        things[i] = value;
+                        this.read(size);// force
+                    })
+                    attachedMap.add(currentThing);
+                }
+                return;
+            }
             if (isStream(currentThing)) {
                 if (!attachedMap.has(currentThing)) {
                     currentThing.on('readable', () => {
@@ -33,10 +48,7 @@ const concatAsStream = (things, options = {}) => {
                         }
                     });
                     currentThing.on('end', () => {
-                        console.log("end")
-                        
                         next();
-                        // console.log(things[i])
                     });
                     attachedMap.add(currentThing);
                 }
