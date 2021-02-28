@@ -2,8 +2,13 @@ export { concatAsStream };
 
 import { Readable } from "stream";
 
+
 const isStream = (x) => {
     return x && typeof x !== `string` && typeof x.destroy === `function`; 
+}
+
+const isPromise = (x) => {
+    return x && typeof x === `object` && typeof x.then === `function`; 
 }
 
 const concatAsStream = (things, options = {}) => {
@@ -23,6 +28,16 @@ const concatAsStream = (things, options = {}) => {
                 this.push(null);
                 return;
             }
+            if (isPromise(currentThing)) {
+                if (!attachedMap.has(currentThing)) {
+                    currentThing.then(value => {
+                        things[i] = value;
+                        this.push("");// force
+                    })
+                    attachedMap.add(currentThing);
+                }
+                return;
+            }
             if (isStream(currentThing)) {
                 if (!attachedMap.has(currentThing)) {
                     currentThing.on('readable', () => {
@@ -33,10 +48,7 @@ const concatAsStream = (things, options = {}) => {
                         }
                     });
                     currentThing.on('end', () => {
-                        console.log("end")
-                        
                         next();
-                        // console.log(things[i])
                     });
                     attachedMap.add(currentThing);
                 }
@@ -58,7 +70,7 @@ const concatAsStream = (things, options = {}) => {
             }
         
             if (remainingSize > length - j) {
-                this.read()
+                this.read();
             };
             
         },
