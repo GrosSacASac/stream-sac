@@ -2,6 +2,7 @@ export { concatAsStream };
 
 import { Readable } from "stream";
 
+
 const isStream = (x) => {
     return x && typeof x !== `string` && typeof x.destroy === `function`; 
 }
@@ -28,11 +29,10 @@ const concatAsStream = (things, options = {}) => {
                 return;
             }
             if (isPromise(currentThing)) {
-                console.log("pro")
                 if (!attachedMap.has(currentThing)) {
                     currentThing.then(value => {
                         things[i] = value;
-                        this.read(size);// force
+                        this.push("");// force
                     })
                     attachedMap.add(currentThing);
                 }
@@ -70,7 +70,7 @@ const concatAsStream = (things, options = {}) => {
             }
         
             if (remainingSize > length - j) {
-                this.read()
+                this.read();
             };
             
         },
