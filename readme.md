@@ -38,3 +38,8 @@ import {
 
 [CC0](./license.txt)
 
+### Related
+
+ - [from2](https://www.npmjs.com/package/from2)
+ - [Readable.from](https://nodejs.org/api/stream.html#stream_creating_readable_streams_with_async_generators)
+ - [into-stream](https://github.com/sindresorhus/into-stream)
