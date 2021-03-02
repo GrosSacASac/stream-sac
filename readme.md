@@ -26,6 +26,14 @@ import {
 } from "stream-sac/source/streamifyStringFunction.js";
 ```
 
+## HtmlMinifier.js
+
+```js
+import {
+    HtmlMinifier,
+} from "stream-sac/source/html/HtmlMinifier.js";
+```
+
 
 ## About
 

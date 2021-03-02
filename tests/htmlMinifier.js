@@ -1,4 +1,4 @@
-import { HtmlMinifier } from "../source/html/htmlMinifier.js";
+import { HtmlMinifier } from "../source/html/HtmlMinifier.js";
 import fs from "fs";
 
 
