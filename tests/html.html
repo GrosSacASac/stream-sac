@@ -15,9 +15,20 @@
 
     <!-- space in between standalone attribute and end  -->
     <input readonly >
+    
     <!-- inline spaces -->
     <p>Drink water  b   c</p>
 
-    <script src="bundle.js"></script>
+    <!-- keep things inside quoted attribute value -->
+    <p data-element="select 2spaces  >>p<<"></p>
+
+    <!-- unquoted -->
+    <script src=a.js></script>
+
+    <!-- single quote -->
+    <script src='b.js'></script>
+
+    <!-- double quote -->
+    <script src="c.js"></script>
 </body>
 </html>

@@ -15,6 +15,7 @@ const STATE = {
     AFTER_START_TAG: s++,
     ATTRIBUTE_NAME: s++,
     ATTRIBUTE_VALUE: s++,
+    ATTRIBUTE_VALUE_QUOTED: s++,
 };
 
 
@@ -32,6 +33,7 @@ class HtmlMinifier extends Transform {
         this.spaceUsed = false;
         this.state = STATE.FREE;
         this.currentString = ``;
+        this.currentQuote = ``;
     }
 
     _selfBuffer(x) {
@@ -120,7 +122,7 @@ class HtmlMinifier extends Transform {
                         if (this.spaceUsed) {
 
                         } else {
-                            this.push(c);
+                            this._selfBuffer(c);
                             this.spaceUsed = true;
                         }
                     } else if (c === `>`) {
@@ -162,7 +164,6 @@ class HtmlMinifier extends Transform {
                     break;
 
                 case STATE.ATTRIBUTE_VALUE:
-                    // todo handle <> inside quotes
                     if (isWhitespace(c)) {
                         this.push(this.currentString);
                         this.currentString = ``;
@@ -174,7 +175,27 @@ class HtmlMinifier extends Transform {
                         this.push(this.currentString);
                         this._refresh();
                         this.state = STATE.FREE;
+                    } else {
+                        if (!this.currentString) {
+                            if (c === `"` || c === `'`) {
+                                this._selfBuffer(c);
+                                this.currentQuote = c;
+                                this.state = STATE.ATTRIBUTE_VALUE_QUOTED;
+                                break;
+                            }
+                        }
 
+                        this._selfBuffer(c);
+                        
+                    }
+                    
+                    break;
+                case STATE.ATTRIBUTE_VALUE_QUOTED:
+                    if (c === this.currentQuote) {
+                        this._selfBuffer(c);
+                        this.push(this.currentString);
+                        this.currentString = ``;
+                        this.state = STATE.AFTER_START_TAG;
                     } else {
                         this._selfBuffer(c);
                     }
