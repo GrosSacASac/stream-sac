@@ -93,15 +93,15 @@ class HtmlMinifier extends Transform {
                     if (this.currentString.endsWith(END_COMMENT)) {
                         // discard comment
                         // this.push(this.currentString);
-                        this._refresh();
+                        this.currentString = ``;
                         this.state = STATE.FREE;
                     }
                     break;
                 case STATE.TAG_NAME:
                     if (isWhitespace(c)) {
                         this.push(this.currentString);
-                        this.state = STATE.AFTER_START_TAG
                         this._refresh();
+                        this.state = STATE.AFTER_START_TAG
                         this.push(c);
                         this.spaceUsed = true;
                     } else if (c === `>`) {
@@ -124,8 +124,7 @@ class HtmlMinifier extends Transform {
                             this.spaceUsed = true;
                         }
                     } else if (c === `>`) {
-                        this._selfBuffer(c);
-                        this.push(this.currentString);
+                        this.push(c);
                         this._refresh();
                         this.state = STATE.FREE;
 
@@ -138,9 +137,9 @@ class HtmlMinifier extends Transform {
                     break;
                 case STATE.ATTRIBUTE_NAME:
                     if (isWhitespace(c)) {
-                        this._selfBuffer(c);
                         this.push(this.currentString);
                         this._refresh();
+                        this._selfBuffer(c);
                         this.spaceUsed = true;
                         this.state = STATE.AFTER_START_TAG;
                     } else if (c === `>`) {
@@ -165,9 +164,9 @@ class HtmlMinifier extends Transform {
                 case STATE.ATTRIBUTE_VALUE:
                     // todo handle <> inside quotes
                     if (isWhitespace(c)) {
-                        this._selfBuffer(c);
                         this.push(this.currentString);
-                        this._refresh();
+                        this.currentString = ``;
+                        this._selfBuffer(c);
                         this.spaceUsed = true;
                         this.state = STATE.AFTER_START_TAG;
                     } else if (c === `>`) {
