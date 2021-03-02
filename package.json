@@ -1,6 +1,6 @@
 {
   "name": "stream-sac",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Utility functions",
   "license": "CC0-1.0",
   "type": "module",
@@ -50,6 +50,13 @@
     "url": "git://github.com/GrosSacASac/stream-sac.git"
   },
   "keywords": [
-    "stream"
-  ]
+    "stream",
+    "concat",
+    "string",
+    "html",
+    "minify"
+  ],
+  "dependencies": {
+    "is-whitespace-character": "^1.0.4"
+  }
 }
