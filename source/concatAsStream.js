@@ -12,18 +12,18 @@ const isPromise = (x) => {
 }
 
 const concatAsStream = (things, options = {}) => {
-    let i = 0;
     let j = 0;
+    let currentThing;
     const next = () => {
-        i += 1;
+        currentThing = things.shift();
         j = 0;
-        return things.length !== i;
+        return Boolean(currentThing);
     }
     const attachedMap = new WeakSet();
+    next();
     return new Readable({
         read(size) {
             let remainingSize = size;
-            let currentThing = things[i];
             if (!currentThing) {
                 this.push(null);
                 return;
@@ -31,7 +31,7 @@ const concatAsStream = (things, options = {}) => {
             if (isPromise(currentThing)) {
                 if (!attachedMap.has(currentThing)) {
                     currentThing.then(value => {
-                        things[i] = value;
+                        currentThing = value;
                         this.push("");// force
                     })
                     attachedMap.add(currentThing);
@@ -55,7 +55,6 @@ const concatAsStream = (things, options = {}) => {
                 return;
             }
             let {length} = currentThing;
-            globalThis.i++
             const readMax = remainingSize;
             this.push(currentThing.substr(j, remainingSize))
             remainingSize -= length - j;
@@ -75,7 +74,7 @@ const concatAsStream = (things, options = {}) => {
             
         },
         destroy(error, callback) {
-            for (let k = i; k < things.length; k += 1) {
+            for (let k = 0; k < things.length; k += 1) {
                 if (isStream(things[k])) {
                     things[k].destroy();
                 }
