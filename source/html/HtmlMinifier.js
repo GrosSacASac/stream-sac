@@ -59,7 +59,7 @@ class HtmlMinifier extends Transform {
                         }
                     } else if (c === `<`) {
                         this._selfBuffer(c);
-                        this.state = STATE.START_TAG_NAME
+                        this.state = STATE.START_TAG_NAME;
                     } else {
                         toPush.push(c);
                         this.spaceUsed = false;
@@ -105,7 +105,7 @@ class HtmlMinifier extends Transform {
                         toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.AFTER_START_TAG
-                        toPush.push(c);
+                        this._selfBuffer(c);
                         this.spaceUsed = true;
                     } else if (c === `>`) {
                         this._selfBuffer(c);
