@@ -7,6 +7,7 @@ import isWhitespace from "is-whitespace-character";
 let s = 0;
 const STATE = {
     FREE: s++,
+    SCRIPT_CONTENT: s++,
     START_TAG_NAME: s++,
     START_DOCTYPE_OR_COMMENT: s++,
     DOCTYPE: s++,
@@ -21,12 +22,14 @@ const STATE = {
 
 const EXPECTED_DOCTYPE = `<!doctype html>`;
 const END_COMMENT = `-->`;
-
+const SCRIPT_START = `<script`;
+const SCRIPT_END = `</script>`
 
 class HtmlMinifier extends Transform {
     constructor(options = {}) {
         super({ readableObjectMode: true });
         this._refresh();
+        this.currentTag = ``; // not accurate
     }
 
     _refresh() {
@@ -63,6 +66,14 @@ class HtmlMinifier extends Transform {
                     } else {
                         toPush.push(c);
                         this.spaceUsed = false;
+                    }
+                    break;
+                case STATE.SCRIPT_CONTENT:
+                    this._selfBuffer(c);
+                    if (c === `>` && this.currentString.endsWith(SCRIPT_END)) {
+                        toPush.push(this.currentString);
+                        this._refresh();
+                        this.currentTag = ``;
                     }
                     break;
                 case STATE.START_TAG_NAME:
@@ -102,12 +113,14 @@ class HtmlMinifier extends Transform {
                     break;
                 case STATE.TAG_NAME:
                     if (isWhitespace(c)) {
+                        this.currentTag = this.currentString;
                         toPush.push(this.currentString);
                         this._refresh();
-                        this.state = STATE.AFTER_START_TAG
+                        this.state = STATE.AFTER_START_TAG;
                         this._selfBuffer(c);
                         this.spaceUsed = true;
                     } else if (c === `>`) {
+                        this.currentTag = this.currentString;
                         this._selfBuffer(c);
                         toPush.push(this.currentString);
                         this._refresh();
@@ -203,7 +216,10 @@ class HtmlMinifier extends Transform {
 
                     break;
                 default:
-                    return i;
+                    throw "Invalid state";
+            }
+            if (this.state === STATE.FREE && this.currentTag === SCRIPT_START) {
+                this.state = STATE.SCRIPT_CONTENT;
             }
         }
         this.push(toPush.join(``));
