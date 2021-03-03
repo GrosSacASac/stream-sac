@@ -18,7 +18,7 @@ import {
 } from "stream-sac/source/concatAsStream.js";
 ```
 
-## concatAsStream.js
+## streamifyStringFunction.js
 
 ```js
 import {
