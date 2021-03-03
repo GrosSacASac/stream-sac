@@ -12,18 +12,15 @@ const isPromise = (x) => {
 }
 
 const concatAsStream = (things, options = {}) => {
-    let j = 0;
     let currentThing;
     const next = () => {
         currentThing = things.shift();
-        j = 0;
         return Boolean(currentThing);
     }
     const attachedMap = new WeakSet();
     next();
     return new Readable({
         read(size) {
-            let remainingSize = size;
             if (!currentThing) {
                 this.push(null);
                 return;
@@ -54,23 +51,8 @@ const concatAsStream = (things, options = {}) => {
                 }
                 return;
             }
-            let {length} = currentThing;
-            const readMax = remainingSize;
-            this.push(currentThing.substr(j, remainingSize))
-            remainingSize -= length - j;
-            if (remainingSize > 0) {
-                const canContinue = next();
-                if (!canContinue) {
-                    this.push(null);
-                    return;
-                }
-            } else {
-                j += readMax;
-            }
-        
-            if (remainingSize > length - j) {
-                this.read();
-            };
+            this.push(currentThing)
+            next();
             
         },
         destroy(error, callback) {
