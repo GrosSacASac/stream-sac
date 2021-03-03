@@ -44,6 +44,7 @@ class HtmlMinifier extends Transform {
         let i = 0;
         const asString = String(buffer);
         const { length } = asString;
+        const toPush = []; // avoid pushing character by character
 
         for (i = 0; i < length; i += 1) {
             const c = asString[i];
@@ -53,15 +54,15 @@ class HtmlMinifier extends Transform {
                         if (this.spaceUsed) {
 
                         } else {
-                            this.push(c);
+                            toPush.push(c);
                             this.spaceUsed = true;
                         }
                     } else if (c === `<`) {
                         this._selfBuffer(c);
                         this.state = STATE.START_TAG_NAME
                     } else {
-                        this.push(c);
-                        this._refresh();
+                        toPush.push(c);
+                        this.spaceUsed = false;
                     }
                     break;
                 case STATE.START_TAG_NAME:
@@ -85,7 +86,7 @@ class HtmlMinifier extends Transform {
                 case STATE.DOCTYPE:
                     this._selfBuffer(c);
                     if (this.currentString.toLowerCase() === EXPECTED_DOCTYPE) {
-                        this.push(this.currentString.toLowerCase());
+                        toPush.push(this.currentString.toLowerCase());
                         this._refresh();
                         this.state = STATE.FREE;
                     }
@@ -94,21 +95,21 @@ class HtmlMinifier extends Transform {
                     this._selfBuffer(c);
                     if (this.currentString.endsWith(END_COMMENT)) {
                         // discard comment
-                        // this.push(this.currentString);
+                        //toPush.push(this.currentString);
                         this.currentString = ``;
                         this.state = STATE.FREE;
                     }
                     break;
                 case STATE.TAG_NAME:
                     if (isWhitespace(c)) {
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.AFTER_START_TAG
-                        this.push(c);
+                        toPush.push(c);
                         this.spaceUsed = true;
                     } else if (c === `>`) {
                         this._selfBuffer(c);
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.FREE;
 
@@ -126,7 +127,7 @@ class HtmlMinifier extends Transform {
                             this.spaceUsed = true;
                         }
                     } else if (c === `>`) {
-                        this.push(c);
+                        toPush.push(c);
                         this._refresh();
                         this.state = STATE.FREE;
 
@@ -135,24 +136,24 @@ class HtmlMinifier extends Transform {
                         this.state = STATE.ATTRIBUTE_NAME;
 
                     }
-                    
+
                     break;
                 case STATE.ATTRIBUTE_NAME:
                     if (isWhitespace(c)) {
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this._selfBuffer(c);
                         this.spaceUsed = true;
                         this.state = STATE.AFTER_START_TAG;
                     } else if (c === `>`) {
                         this._selfBuffer(c);
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.FREE;
 
                     } else if (c === `=`) {
                         this._selfBuffer(c);
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.ATTRIBUTE_VALUE;
 
@@ -160,19 +161,19 @@ class HtmlMinifier extends Transform {
                         this._selfBuffer(c);
 
                     }
-                    
+
                     break;
 
                 case STATE.ATTRIBUTE_VALUE:
                     if (isWhitespace(c)) {
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this.currentString = ``;
                         this._selfBuffer(c);
                         this.spaceUsed = true;
                         this.state = STATE.AFTER_START_TAG;
                     } else if (c === `>`) {
                         this._selfBuffer(c);
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this._refresh();
                         this.state = STATE.FREE;
                     } else {
@@ -186,25 +187,26 @@ class HtmlMinifier extends Transform {
                         }
 
                         this._selfBuffer(c);
-                        
+
                     }
-                    
+
                     break;
                 case STATE.ATTRIBUTE_VALUE_QUOTED:
                     if (c === this.currentQuote) {
                         this._selfBuffer(c);
-                        this.push(this.currentString);
+                        toPush.push(this.currentString);
                         this.currentString = ``;
                         this.state = STATE.AFTER_START_TAG;
                     } else {
                         this._selfBuffer(c);
                     }
-                    
+
                     break;
                 default:
                     return i;
             }
         }
+        this.push(toPush.join(``));
 
         done();
         return buffer.length;
