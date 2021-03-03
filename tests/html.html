@@ -10,6 +10,12 @@
     <meta name="viewport"  content="width=device-width">
     <!-- space in between attribute and end -->
     <link rel="stylesheet" href="css/normalize.css" >
+    <style>
+        p::after {
+            /* should be parsed as css*/
+            content: "</body>";
+        }
+    </style>
 </head>
 <body>
 
@@ -33,11 +39,12 @@
     <!-- double quote -->
     <script src="c.js"></script>
     
-    <pre>
+    <!-- space in between tag name and attribute name can be minified even inside pre -->
+    <pre><code  data-e="x">
         Whitespace inside pre should be preserved
 
             Am I right ?
-    </pre>
+    </code></pre>
 
     <script>
         console.log(`Do

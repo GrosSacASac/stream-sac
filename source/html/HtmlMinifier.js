@@ -8,6 +8,8 @@ let s = 0;
 const STATE = {
     FREE: s++,
     SCRIPT_CONTENT: s++,
+    PRE_CONTENT: s++,
+    STYLE_CONTENT: s++,
     START_TAG_NAME: s++,
     START_DOCTYPE_OR_COMMENT: s++,
     DOCTYPE: s++,
@@ -23,7 +25,11 @@ const STATE = {
 const EXPECTED_DOCTYPE = `<!doctype html>`;
 const END_COMMENT = `-->`;
 const SCRIPT_START = `<script`;
-const SCRIPT_END = `</script>`
+const SCRIPT_END = `</script>`;
+const PRE_START = `<pre`;
+const PRE_END = `</pre>`;
+const STYLE_START = `<style`;
+const STYLE_END = `</style>`;
 
 class HtmlMinifier extends Transform {
     constructor(options = {}) {
@@ -71,6 +77,23 @@ class HtmlMinifier extends Transform {
                 case STATE.SCRIPT_CONTENT:
                     this._selfBuffer(c);
                     if (c === `>` && this.currentString.endsWith(SCRIPT_END)) {
+                        toPush.push(this.currentString);
+                        this._refresh();
+                        this.currentTag = ``;
+                    }
+                    break;
+                case STATE.STYLE_CONTENT:
+                    this._selfBuffer(c);
+                    if (c === `>` && this.currentString.endsWith(STYLE_END)) {
+                        toPush.push(this.currentString);
+                        this._refresh();
+                        this.currentTag = ``;
+                    }
+                    break;
+                case STATE.PRE_CONTENT:
+                    // todo we can minify more (attributes)
+                    this._selfBuffer(c);
+                    if (c === `>` && this.currentString.endsWith(PRE_END)) {
                         toPush.push(this.currentString);
                         this._refresh();
                         this.currentTag = ``;
@@ -218,8 +241,15 @@ class HtmlMinifier extends Transform {
                 default:
                     throw "Invalid state";
             }
-            if (this.state === STATE.FREE && this.currentTag === SCRIPT_START) {
-                this.state = STATE.SCRIPT_CONTENT;
+            if (this.state === STATE.FREE) {
+                if (this.currentTag === SCRIPT_START) {
+                    this.state = STATE.SCRIPT_CONTENT;
+                } else if (this.currentTag === PRE_START) {
+                    this.state = STATE.PRE_CONTENT;
+                } else if (this.currentTag === STYLE_START) {
+                    this.state = STATE.STYLE_CONTENT;
+                }
+                
             }
         }
         this.push(toPush.join(``));
