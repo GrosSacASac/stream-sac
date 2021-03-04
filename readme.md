@@ -29,11 +29,17 @@ import {
 ## HtmlMinifier.js
 
 The input should be valid. Only removes whitespace and comments for now.
+Optional pass jsMinifier and cssMinifier to minify inline
 
 ```js
 import {
     HtmlMinifier,
 } from "stream-sac/source/html/HtmlMinifier.js";
+
+const htmlStream = new HtmlMinifier({
+    jsMinifier: (x) => x,
+    cssMinifier: (y) => y,
+});
 ```
 
 

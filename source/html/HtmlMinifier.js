@@ -31,11 +31,21 @@ const PRE_END = `</pre>`;
 const STYLE_START = `<style`;
 const STYLE_END = `</style>`;
 
+const identity = (x) => {
+    return x;
+};
+
+const DEFAULT_OPTIONS = {
+    cssMinifier: identity,
+    jsMinifier: identity,
+}
+
 class HtmlMinifier extends Transform {
     constructor(options = {}) {
         super({ readableObjectMode: true });
         this._refresh();
         this.currentTag = ``; // not accurate
+        Object.assign(this, DEFAULT_OPTIONS, options);
     }
 
     _refresh() {
@@ -77,7 +87,9 @@ class HtmlMinifier extends Transform {
                 case STATE.SCRIPT_CONTENT:
                     this._selfBuffer(c);
                     if (c === `>` && this.currentString.endsWith(SCRIPT_END)) {
-                        toPush.push(this.currentString);
+                        const scriptContent = this.currentString.substring(0, this.currentString.length - SCRIPT_END.length)
+                        toPush.push(this.jsMinifier(scriptContent));
+                        toPush.push(SCRIPT_END);
                         this._refresh();
                         this.currentTag = ``;
                     }
@@ -85,7 +97,9 @@ class HtmlMinifier extends Transform {
                 case STATE.STYLE_CONTENT:
                     this._selfBuffer(c);
                     if (c === `>` && this.currentString.endsWith(STYLE_END)) {
-                        toPush.push(this.currentString);
+                        const styleContent = this.currentString.substring(0, this.currentString.length - STYLE_END.length)
+                        toPush.push(this.cssMinifier(styleContent));
+                        toPush.push(STYLE_END);
                         this._refresh();
                         this.currentTag = ``;
                     }

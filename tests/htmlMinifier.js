@@ -6,7 +6,10 @@ const source = "./tests/html.html";
 const destination =  "./tests/html.min.html";
 console.time("time")
 const readStream = fs.createReadStream(source);
-const q = new HtmlMinifier();
+const q = new HtmlMinifier({
+    // jsMinifier: () => "",
+    // cssMinifier: () => "",
+});
 q.setEncoding("utf8");
 q.pipe(fs.createWriteStream(destination));
 readStream.pipe(q);
