@@ -30,8 +30,6 @@ import {
 
 The input should be valid. Only removes whitespace and comments for now.
 
-Does not work with inline css and js. Does not keep whitespace inside `<pre>`.
-
 ```js
 import {
     HtmlMinifier,
