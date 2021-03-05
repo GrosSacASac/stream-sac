@@ -271,7 +271,11 @@ class HtmlMinifier extends Transform {
         return buffer.length;
     }
 
-    _final(done) {
+    _flush(done) {
+        if (this.currentString) {
+            this.push(this.currentString);
+        }
+        this._refresh();
         done();
     }
 
