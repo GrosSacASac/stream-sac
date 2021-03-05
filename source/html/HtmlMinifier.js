@@ -60,12 +60,11 @@ class HtmlMinifier extends Transform {
     }
 
     _transform(buffer, _, done) {
-        let i = 0;
         const asString = String(buffer);
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
 
-        for (i = 0; i < length; i += 1) {
+        for (let i = 0; i < length; i += 1) {
             const c = asString[i];
             switch (this.state) {
                 case STATE.FREE:
