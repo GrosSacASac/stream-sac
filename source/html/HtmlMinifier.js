@@ -252,7 +252,8 @@ class HtmlMinifier extends Transform {
 
                     break;
                 default:
-                    throw "Invalid state";
+                    done("Invalid state");
+                    return;
             }
             if (this.state === STATE.FREE) {
                 if (this.currentTag === SCRIPT_START) {
