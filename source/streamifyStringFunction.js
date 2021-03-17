@@ -34,6 +34,6 @@ const streamifyStringFunction = (stringFunction) => {
     }
     return () => {
         return new AsTransformStream();
-    }
+    };
 };
 
