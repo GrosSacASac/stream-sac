@@ -41,6 +41,7 @@ const concatAsStream = (things, options = {}) => {
                         let result;
                         // todo respect size
                         while (result = currentThing.read(size)) {
+                            // todo check if this.push returns true to handle backpressure
                             this.push(result);
                         }
                     });
