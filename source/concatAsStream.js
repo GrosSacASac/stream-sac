@@ -5,24 +5,24 @@ import { Readable } from "stream";
 
 const isStream = (x) => {
     return x && typeof x !== `string` && typeof x.destroy === `function`; 
-}
+};
 
 const isPromise = (x) => {
     return x && typeof x === `object` && typeof x.then === `function`; 
-}
+};
 
 const concatAsStream = (things, options = {}) => {
     let currentThing;
     const next = () => {
         currentThing = things.shift();
         return Boolean(currentThing);
-    }
+    };
     const readTheStream = function (size) {
         let result;
         while (wantsToRead && (result = currentThing.read(size))) {
             wantsToRead = this.push(result);
         }
-    }
+    };
     const attachedMap = new WeakSet();
     let wantsToRead = true;
     next();
@@ -36,18 +36,18 @@ const concatAsStream = (things, options = {}) => {
                 if (!attachedMap.has(currentThing)) {
                     currentThing.then(value => {
                         currentThing = value;
-                        this.push("");// force
-                    })
+                        this.push(``);// force
+                    });
                     attachedMap.add(currentThing);
                 }
                 return;
             }
             if (isStream(currentThing)) {
                 if (!attachedMap.has(currentThing)) {
-                    currentThing.on('readable', () => {
+                    currentThing.on(`readable`, () => {
                         readTheStream.call(this, size);
                     });
-                    currentThing.once('end', () => {
+                    currentThing.once(`end`, () => {
                         wantsToRead = true;
                         next();
                     });
@@ -58,7 +58,7 @@ const concatAsStream = (things, options = {}) => {
                 }
                 return;
             }
-            this.push(currentThing)
+            this.push(currentThing);
             next();
             
         },
@@ -71,6 +71,6 @@ const concatAsStream = (things, options = {}) => {
             callback(error);
         },
         // highWaterMark: 1,
-        ...options
+        ...options,
     });
-}
+};

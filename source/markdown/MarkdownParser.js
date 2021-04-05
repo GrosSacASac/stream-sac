@@ -16,7 +16,7 @@ const STATE = {
 
 
 const DEFAULT_OPTIONS = {
-}
+};
 
 class MarkdownParser extends Transform {
     constructor(options = {}) {
@@ -48,7 +48,7 @@ class MarkdownParser extends Transform {
             const c = asString[i];
             switch (this.state) {
                 case STATE.FREE:
-                    if (c === "#") {
+                    if (c === `#`) {
                         this.state = STATE.START_TITLE;
                         this.titleLevel = 1;
                     } else if (c === `\``) {
@@ -65,39 +65,39 @@ class MarkdownParser extends Transform {
                         // todo state paragraph
                         if (this.newLined) {
                             this._selfBuffer(` `);
-                            this.newLined = false
+                            this.newLined = false;
                         }
                         this._selfBuffer(c);
                     }
                     break;
                 case STATE.START_TITLE:
-                    if (c === "#") {
+                    if (c === `#`) {
                         this.titleLevel += 1;
                     } else {
-                        this.state = STATE.TITLE_TEXT
+                        this.state = STATE.TITLE_TEXT;
                     }
                     break;
                 case STATE.START_RAW:
-                    if (c === "`") {
+                    if (c === `\``) {
                         this.backTicks += 1;
                         if (this.backTicks === 3) {
-                            this.state = STATE.RAW_DESCRIPTION
+                            this.state = STATE.RAW_DESCRIPTION;
                         }
                     } else {
-                        this.state = STATE.RAW
+                        this.state = STATE.RAW;
                     }
                     break;
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
                         this.rawDescription = this.currentBuffer;
                         this._refresh();
-                        this.state = STATE.RAW
+                        this.state = STATE.RAW;
                     } else {
                         this._selfBuffer(c);
                     }
                     break;
                 case STATE.RAW:
-                    if (c === "`") {
+                    if (c === `\``) {
                         this.closingBackTicks += 1;
                         if (this.closingBackTicks === this.backTicks) {
                             toPush.push(`<code class="${this.rawDescription}">${this.currentBuffer}</code>`);
@@ -109,7 +109,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 default:
-                    done("Invalid state");
+                    done(`Invalid state`);
                     return;
             }
         }

@@ -38,7 +38,7 @@ const identity = (x) => {
 const DEFAULT_OPTIONS = {
     cssMinifier: identity,
     jsMinifier: identity,
-}
+};
 
 class HtmlMinifier extends Transform {
     constructor(options = {}) {
@@ -86,7 +86,7 @@ class HtmlMinifier extends Transform {
                 case STATE.SCRIPT_CONTENT:
                     this._selfBuffer(c);
                     if (c === `>` && this.currentString.endsWith(SCRIPT_END)) {
-                        const scriptContent = this.currentString.substring(0, this.currentString.length - SCRIPT_END.length)
+                        const scriptContent = this.currentString.substring(0, this.currentString.length - SCRIPT_END.length);
                         toPush.push(this.jsMinifier(scriptContent));
                         toPush.push(SCRIPT_END);
                         this._refresh();
@@ -96,7 +96,7 @@ class HtmlMinifier extends Transform {
                 case STATE.STYLE_CONTENT:
                     this._selfBuffer(c);
                     if (c === `>` && this.currentString.endsWith(STYLE_END)) {
-                        const styleContent = this.currentString.substring(0, this.currentString.length - STYLE_END.length)
+                        const styleContent = this.currentString.substring(0, this.currentString.length - STYLE_END.length);
                         toPush.push(this.cssMinifier(styleContent));
                         toPush.push(STYLE_END);
                         this._refresh();
@@ -252,7 +252,7 @@ class HtmlMinifier extends Transform {
 
                     break;
                 default:
-                    done("Invalid state");
+                    done(`Invalid state`);
                     return;
             }
             if (this.state === STATE.FREE) {

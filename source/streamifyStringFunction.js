@@ -7,7 +7,7 @@ const streamifyStringFunction = (stringFunction) => {
     const AsTransformStream = class extends Transform {
         constructor() {
             super({ readableObjectMode: false });
-            this.setEncoding('utf8');
+            this.setEncoding(`utf8`);
             // this.setDefaultEncoding('utf8');
         }
     
@@ -26,12 +26,12 @@ const streamifyStringFunction = (stringFunction) => {
                 return;
             }
             if (result) {
-                this.push(result)
+                this.push(result);
             }
             done();
             return length;
         }
-    }
+    };
     return () => {
         return new AsTransformStream();
     };
