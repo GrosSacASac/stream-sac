@@ -2,7 +2,7 @@ import { streamifyStringFunction } from "../source/streamifyStringFunction.js";
 
 
 const encode = c => {
-    return String.fromCharCode(c.charCodeAt(0)+1);
+    return String.fromCharCode(c.charCodeAt(0) + 1);
 };
 
 
