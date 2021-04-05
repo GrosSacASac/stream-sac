@@ -17,7 +17,14 @@ const concatAsStream = (things, options = {}) => {
         currentThing = things.shift();
         return Boolean(currentThing);
     }
+    const readTheStream = function (size) {
+        let result;
+        while (wantsToRead && (result = currentThing.read(size))) {
+            wantsToRead = this.push(result);
+        }
+    }
     const attachedMap = new WeakSet();
+    let wantsToRead = true;
     next();
     return new Readable({
         read(size) {
@@ -38,17 +45,16 @@ const concatAsStream = (things, options = {}) => {
             if (isStream(currentThing)) {
                 if (!attachedMap.has(currentThing)) {
                     currentThing.on('readable', () => {
-                        let result;
-                        // todo respect size
-                        while (result = currentThing.read(size)) {
-                            // todo check if this.push returns true to handle backpressure
-                            this.push(result);
-                        }
+                        readTheStream.call(this, size);
                     });
-                    currentThing.on('end', () => {
+                    currentThing.once('end', () => {
+                        wantsToRead = true;
                         next();
                     });
                     attachedMap.add(currentThing);
+                } else if (!wantsToRead) {
+                    wantsToRead = true;
+                    readTheStream.call(this, size);
                 }
                 return;
             }
