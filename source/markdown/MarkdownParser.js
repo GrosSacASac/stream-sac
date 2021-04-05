@@ -13,6 +13,8 @@ const STATE = {
     RAW: s++,
     START_TITLE: s++,
     TITLE_TEXT: s++,
+    LIST_ITEM_TEXT: s++,
+    LIST_ITEM_END: s++,
 };
 
 
@@ -25,6 +27,7 @@ class MarkdownParser extends Transform {
         this._refresh();
         Object.assign(this, DEFAULT_OPTIONS, options);
         this.inside = [];
+        this.items = [];
     }
 
     _refresh() {
@@ -60,6 +63,16 @@ class MarkdownParser extends Transform {
                     this.state = STATE.FREE;
                 }
                 break;
+            case STATE.LIST_ITEM_TEXT:
+                this.items.push(this.currentString);
+            case STATE.LIST_ITEM_END:
+                toPush.push(`<ul>`);
+                this.items.forEach(item => {
+                    toPush.push(`<li>${item}</li>`);
+                });
+                toPush.push(`</ul>`);
+                this.items = [];
+                break;
             default:
                 return;
         }
@@ -81,6 +94,8 @@ class MarkdownParser extends Transform {
                     } else if (c === `\``) {
                         this.state = STATE.START_RAW;
                         this.backTicks = 1;
+                    } else if (c === `*` || c === `-`) {
+                        this.state = STATE.LIST_ITEM_TEXT;
                     } else if (isWhitespace(c)) {
 
                     } else {
@@ -106,6 +121,24 @@ class MarkdownParser extends Transform {
                             this.newLined = false;
                         }
                         this._selfBuffer(c);
+                    }
+                    break;
+                case STATE.LIST_ITEM_TEXT:
+                    if (c === `\n`) {
+                        this.items.push(this.currentString)
+                        this._refresh();
+                        this.state = STATE.LIST_ITEM_END;
+                    } else {
+                        this._selfBuffer(c);
+                    }
+                    break;
+
+                case STATE.LIST_ITEM_END:
+                    if (c === `\n`) {
+                        this._closeCurrent(toPush);
+                    } else if (isWhitespace(c)) {
+                    } else if (c === `-` || c === `*`) {
+                        this.state = STATE.LIST_ITEM_TEXT;
                     }
                     break;
                 case STATE.START_TITLE:
