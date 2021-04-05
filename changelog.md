@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0
+
+Add streaming markdown parser
+
 ## 1.5.0
 
 Handle unterminated html

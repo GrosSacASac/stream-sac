@@ -28,8 +28,7 @@ import {
 
 ## HtmlMinifier.js
 
-The input should be valid. Only removes whitespace and comments for now.
-Optional pass jsMinifier and cssMinifier to minify inline
+The input should be valid. Optional pass jsMinifier and cssMinifier to minify inline.
 
 ```js
 import {
@@ -39,6 +38,19 @@ import {
 const htmlStream = new HtmlMinifier({
     jsMinifier: (x) => x,
     cssMinifier: (y) => y,
+});
+```
+
+## MarkdownParser.js
+
+The input should be valid. 
+
+```js
+import {
+    MarkdownParser,
+} from "stream-sac/source/markdown/MarkdownParser.js";
+
+const markdownStream = new MarkdownParser({
 });
 ```
 
