@@ -1,7 +1,7 @@
 export { HtmlMinifier };
 
 import { Transform } from "stream";
-import isWhitespace from "is-whitespace-character";
+import {isWhitespaceCharacter as isWhitespace} from "is-whitespace-character";
 
 
 let s = 0;
