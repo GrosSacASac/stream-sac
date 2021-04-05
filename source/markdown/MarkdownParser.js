@@ -1,11 +1,13 @@
 export { MarkdownParser };
 
 import { Transform } from "stream";
+import isWhitespace from "is-whitespace-character";
 
 
 let s = 0;
 const STATE = {
     FREE: s++,
+    TEXT: s++,
     START_RAW: s++,
     RAW_DESCRIPTION: s++,
     RAW: s++,
@@ -21,8 +23,8 @@ class MarkdownParser extends Transform {
     constructor(options = {}) {
         super({ readableObjectMode: true });
         this._refresh();
-        this.currentTag = ``; // not accurate
         Object.assign(this, DEFAULT_OPTIONS, options);
+        this.inside = [];
     }
 
     _refresh() {
@@ -36,6 +38,32 @@ class MarkdownParser extends Transform {
 
     _selfBuffer(x) {
         this.currentString = `${this.currentString}${x}`;
+    }
+
+    _closeCurrent(toPush) {
+        switch (this.state) {
+            case STATE.TEXT:
+                toPush.push(`<p>${this.currentString}</p>`);
+                this._refresh();
+                break;
+            case STATE.TITLE_TEXT:
+                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
+                this._refresh();
+                this.state = STATE.FREE;
+                break;
+            case STATE.RAW:
+                toPush.push(`<code class="${this.rawDescription}">${this.currentString}</code>`);
+                this._refresh();
+                if (this.inside.length) {
+                    this.state = this.inside.pop();
+                } else {
+                    this.state = STATE.FREE;
+                }
+                break;
+            default:
+                return;
+        }
+
     }
 
     _transform(buffer, _, done) {
@@ -53,15 +81,26 @@ class MarkdownParser extends Transform {
                     } else if (c === `\``) {
                         this.state = STATE.START_RAW;
                         this.backTicks = 1;
+                    } else if (isWhitespace(c)) {
+
+                    } else {
+                        this._selfBuffer(c);
+                        this.state = STATE.TEXT
+                    }
+                    break;
+
+                case STATE.TEXT:
+                    if (c === `\``) {
+                        this.inside.push(STATE.TEXT);
+                        this.state = STATE.START_RAW;
+                        this.backTicks = 1;
                     } else if (c === `\n`) {
                         if (this.newLined) {
-                            toPush.push(`<p>${this.currentString}</p>`);
-                            this._refresh();
+                            this._closeCurrent(toPush);
                         } else {
                             this.newLined = true;
                         }
                     } else {
-                        // todo state paragraph
                         if (this.newLined) {
                             this._selfBuffer(` `);
                             this.newLined = false;
@@ -76,6 +115,13 @@ class MarkdownParser extends Transform {
                         this.state = STATE.TITLE_TEXT;
                     }
                     break;
+                case STATE.TITLE_TEXT:
+                    if (c === `\n`) {
+                        this._closeCurrent(toPush);
+                    } else {
+                        this._selfBuffer(c);
+                    }
+                    break;
                 case STATE.START_RAW:
                     if (c === `\``) {
                         this.backTicks += 1;
@@ -83,13 +129,15 @@ class MarkdownParser extends Transform {
                             this.state = STATE.RAW_DESCRIPTION;
                         }
                     } else {
+                        this._selfBuffer(c);
                         this.state = STATE.RAW;
                     }
                     break;
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
-                        this.rawDescription = this.currentBuffer;
+                        const description = this.currentString
                         this._refresh();
+                        this.rawDescription = description;
                         this.state = STATE.RAW;
                     } else {
                         this._selfBuffer(c);
@@ -99,9 +147,7 @@ class MarkdownParser extends Transform {
                     if (c === `\``) {
                         this.closingBackTicks += 1;
                         if (this.closingBackTicks === this.backTicks) {
-                            toPush.push(`<code class="${this.rawDescription}">${this.currentBuffer}</code>`);
-                            this._refresh();
-                            this.state = STATE.FREE;
+                            this._closeCurrent(toPush);
                         }
                     } else {
                         this._selfBuffer(c);
@@ -119,10 +165,11 @@ class MarkdownParser extends Transform {
     }
 
     _flush(done) {
-        if (this.currentString) {
-            // todo ???
-            // this.push(this.currentString);
-        }
+        const toPush = [];
+        this._closeCurrent(toPush);
+        toPush.forEach(string => {
+            this.push(string);
+        })
         this._refresh();
         done();
     }
