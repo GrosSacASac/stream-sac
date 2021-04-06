@@ -4,18 +4,25 @@ import { Transform } from "stream";
 import {isWhitespaceCharacter as isWhitespace} from "is-whitespace-character";
 
 
-let s = 0;
+let i = 0;
 const STATE = {
-    FREE: s++,
-    TEXT: s++,
-    START_RAW: s++,
-    RAW_DESCRIPTION: s++,
-    RAW: s++,
-    START_TITLE: s++,
-    TITLE_TEXT: s++,
-    LIST_ITEM_TEXT: s++,
-    LIST_ITEM_END: s++,
+    FREE: i++,
+    TEXT: i++,
+    START_RAW: i++,
+    RAW_DESCRIPTION: i++,
+    RAW: i++,
+    START_TITLE: i++,
+    TITLE_TEXT: i++,
+    LIST_ITEM_TEXT: i++,
+    LIST_ITEM_END: i++,
 };
+
+const INLINE_STATE = {
+    REGULAR: i++,
+    LINK_TEXT: i++,
+    AFTER_LINK_TEXT: i++,
+    LINK_TARGET: i++,
+}
 
 
 const DEFAULT_OPTIONS = {
@@ -32,15 +39,22 @@ class MarkdownParser extends Transform {
 
     _refresh() {
         this.state = STATE.FREE;
+        this.inlineState = INLINE_STATE.REGULAR;
         this.currentString = ``;
+        this.currentInlineString = ``;
         this.rawDescription = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
         this.newLined = false;
+        this.inlineState = undefined;
     }
 
     _selfBuffer(x) {
         this.currentString = `${this.currentString}${x}`;
+    }
+    
+    _selfInlineBuffer(x) {
+        this.currentInlineString = `${this.currentInlineString}${x}`;
     }
 
     _closeCurrent(toPush) {
@@ -87,6 +101,41 @@ class MarkdownParser extends Transform {
 
     }
 
+    _handleInline(c) {
+        switch (this.inlineState) {
+            case INLINE_STATE.LINK_TEXT:
+                if (c === `]`) {
+                    this.inlineState = INLINE_STATE.AFTER_LINK_TEXT;
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            case INLINE_STATE.AFTER_LINK_TEXT:
+                if (c === `(`) {
+                    this.inlineState = INLINE_STATE.LINK_TARGET;
+                    this.linkText = this.currentInlineString;
+                } else {
+                    // not a link just regular text inside []
+                    this._selfInlineBuffer(c);
+                    this._selfBuffer(`[${this.currentInlineString}`);
+                    this.inlineState = INLINE_STATE.REGULAR;
+                }
+                this.currentInlineString = ``;
+                break;
+            case INLINE_STATE.LINK_TARGET:
+                if (c === `)`) {
+                    this._selfBuffer(`<a href=${this.currentInlineString}>${this.linkText}</a>`);
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    this.currentInlineString = ``;
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            default:
+                return true;
+        }
+    }
+
     _transform(buffer, _, done) {
         const asString = String(buffer);
         const { length } = asString;
@@ -106,6 +155,9 @@ class MarkdownParser extends Transform {
                         this.state = STATE.LIST_ITEM_TEXT;
                     } else if (isWhitespace(c)) {
 
+                    } else if (c === `[`) {
+                        this.inlineState = INLINE_STATE.LINK_TEXT;
+                        this.state = STATE.TEXT
                     } else {
                         this._selfBuffer(c);
                         this.state = STATE.TEXT
@@ -113,10 +165,15 @@ class MarkdownParser extends Transform {
                     break;
 
                 case STATE.TEXT:
+                    if (!this._handleInline(c)) {
+                        continue;
+                    }
                     if (c === `\``) {
                         this.inside.push(STATE.TEXT);
                         this.state = STATE.START_RAW;
                         this.backTicks = 1;
+                    } else if (c === `[`) {
+                        this.inlineState = INLINE_STATE.LINK_TEXT;
                     } else if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush);
@@ -132,10 +189,15 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.LIST_ITEM_TEXT:
+                    if (!this._handleInline(c)) {
+                        continue;
+                    }
                     if (c === `\n`) {
                         this.items.push(this.currentString)
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
+                    } else if (c === `[`) {
+                        this.inlineState = INLINE_STATE.LINK_TEXT;
                     } else {
                         this._selfBuffer(c);
                     }
@@ -157,8 +219,13 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.TITLE_TEXT:
+                    if (!this._handleInline(c)) {
+                        continue;
+                    }
                     if (c === `\n`) {
                         this._closeCurrent(toPush);
+                    } else if (c === `[`) {
+                        this.inlineState = INLINE_STATE.LINK_TEXT;
                     } else {
                         this._selfBuffer(c);
                     }

@@ -4,21 +4,21 @@ import { Transform } from "stream";
 import {isWhitespaceCharacter as isWhitespace} from "is-whitespace-character";
 
 
-let s = 0;
+let i = 0;
 const STATE = {
-    FREE: s++,
-    SCRIPT_CONTENT: s++,
-    PRE_CONTENT: s++,
-    STYLE_CONTENT: s++,
-    START_TAG_NAME: s++,
-    START_DOCTYPE_OR_COMMENT: s++,
-    DOCTYPE: s++,
-    COMMENT: s++,
-    TAG_NAME: s++,
-    AFTER_START_TAG: s++,
-    ATTRIBUTE_NAME: s++,
-    ATTRIBUTE_VALUE: s++,
-    ATTRIBUTE_VALUE_QUOTED: s++,
+    FREE: i++,
+    SCRIPT_CONTENT: i++,
+    PRE_CONTENT: i++,
+    STYLE_CONTENT: i++,
+    START_TAG_NAME: i++,
+    START_DOCTYPE_OR_COMMENT: i++,
+    DOCTYPE: i++,
+    COMMENT: i++,
+    TAG_NAME: i++,
+    AFTER_START_TAG: i++,
+    ATTRIBUTE_NAME: i++,
+    ATTRIBUTE_VALUE: i++,
+    ATTRIBUTE_VALUE_QUOTED: i++,
 };
 
 
