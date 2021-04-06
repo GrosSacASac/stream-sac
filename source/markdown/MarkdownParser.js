@@ -55,11 +55,19 @@ class MarkdownParser extends Transform {
                 this.state = STATE.FREE;
                 break;
             case STATE.RAW:
-                toPush.push(`<code class="${this.rawDescription}">${this.currentString}</code>`);
+                const codeBlock = `<code class="${this.rawDescription}">${this.currentString}</code>`
+                let currentString;
+                if (this.closingBackTicks === 3) {
+                    currentString = `<pre>${codeBlock}</pre>`;
+                } else {
+                    currentString = codeBlock;
+                }
                 this._refresh();
                 if (this.inside.length) {
+                    this.currentString = currentString;
                     this.state = this.inside.pop();
                 } else {
+                    toPush.push(currentString);
                     this.state = STATE.FREE;
                 }
                 break;
@@ -202,7 +210,10 @@ class MarkdownParser extends Transform {
         this._closeCurrent(toPush);
         toPush.forEach(string => {
             this.push(string);
-        })
+        });
+        if (this.currentString) {
+            this.push(this.currentString);
+        }
         this._refresh();
         done();
     }
