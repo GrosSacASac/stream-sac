@@ -16,6 +16,6 @@ console.time(`time`);
 pipeline(readStream, htmlMinifier, fs.createWriteStream(destination), (error) => {
     console.timeEnd(`time`);
     if (error) {
-        console.error(errror);
+        console.error(error);
     }
 });

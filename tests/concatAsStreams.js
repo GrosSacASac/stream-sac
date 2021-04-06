@@ -22,6 +22,6 @@ concatedStream.setEncoding(`utf8`);
 // output to standard out
 pipeline(concatedStream, process.stdout, (error) => {
     if (error) {
-        console.error(errror);
+        console.error(error);
     }
 });

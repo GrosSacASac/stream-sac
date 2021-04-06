@@ -13,7 +13,7 @@ console.time(`time`);
 pipeline(readStream, markdownParser, fs.createWriteStream(destination), (error) => {
     console.timeEnd(`time`);
     if (error) {
-        console.error(errror);
+        console.error(error);
     }
 });
 
