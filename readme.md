@@ -51,6 +51,7 @@ import {
 } from "stream-sac/source/markdown/MarkdownParser.js";
 
 const markdownStream = new MarkdownParser({
+    languagePrefix: `language-`,
 });
 ```
 

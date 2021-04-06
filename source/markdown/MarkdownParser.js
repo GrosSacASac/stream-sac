@@ -26,6 +26,7 @@ const INLINE_STATE = {
 
 
 const DEFAULT_OPTIONS = {
+    languagePrefix: `language-`,
 };
 
 class MarkdownParser extends Transform {
@@ -70,7 +71,7 @@ class MarkdownParser extends Transform {
                 this.state = STATE.FREE;
                 break;
             case STATE.RAW:
-                const codeBlock = `<code class="${this.rawDescription}">${this.currentString}</code>`
+                const codeBlock = `<code class="${this.languagePrefix}${this.rawDescription}">${this.currentString}</code>`
                 let currentString;
                 if (this.closingBackTicks === 3) {
                     currentString = `<pre>${codeBlock}</pre>`;
