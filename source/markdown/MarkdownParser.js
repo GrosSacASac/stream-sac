@@ -42,6 +42,7 @@ class MarkdownParser extends Transform {
         this.inlineState = INLINE_STATE.REGULAR;
         this.currentString = ``;
         this.currentInlineString = ``;
+        this.linkText = ``;
         this.rawDescription = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
