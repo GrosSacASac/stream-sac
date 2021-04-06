@@ -107,7 +107,7 @@ class MarkdownParser extends Transform {
 
     }
 
-    _handleInline(c) {
+    _handleInline(c, toPush) {
         switch (this.inlineState) {
             case INLINE_STATE.AFTER_LINK_TEXT:
                 if (c === `(`) {
