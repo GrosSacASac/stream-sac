@@ -162,7 +162,7 @@ class MarkdownParser extends Transform {
             const c = asString[i];
             switch (this.state) {
                 case STATE.FREE:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._handleInline(c)) {
                         continue;
                     }
                     if (c === `#`) {
