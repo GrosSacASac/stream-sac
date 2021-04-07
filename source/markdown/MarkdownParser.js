@@ -47,6 +47,7 @@ class MarkdownParser extends Transform {
         this.rawDescription = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
+        this.firstVisibleCharacterPassed = false;
         this.newLined = false;
         this.inlineState = undefined;
     }
@@ -73,23 +74,27 @@ class MarkdownParser extends Transform {
             case STATE.RAW: {
                 let classText = ``;
                 if (this.rawDescription) {
-                    classText = `class="${this.languagePrefix}${this.rawDescription}"`;
+                    classText = ` class="${this.languagePrefix}${this.rawDescription}"`;
                 }
                 const codeBlock = `<code${classText}>${this.currentString}</code>`
                 let currentString;
                 if (this.closingBackTicks === 3) {
                     currentString = `<pre>${codeBlock}</pre>`;
-                } else {
-                    currentString = codeBlock;
-                }
-                this._refresh();
-                if (this.inside.length) {
-                    this.currentString = currentString;
-                    this.state = this.inside.pop();
-                } else {
                     toPush.push(currentString);
                     this.state = STATE.FREE;
+                    this._refresh();
+                } else {
+                    currentString = codeBlock;
+                    this._refresh();
+                    if (this.inside.length) {
+                        this.currentString = currentString;
+                        this.state = this.inside.pop();
+                    } else {
+                        toPush.push(currentString);
+                        this.state = STATE.FREE;
+                    }
                 }
+                
                 break;
             } case STATE.LIST_ITEM_TEXT:
                 this.items.push(this.currentString);
@@ -100,6 +105,7 @@ class MarkdownParser extends Transform {
                 });
                 toPush.push(`</ul>`);
                 this.items = [];
+                this._refresh();
                 break;
             default:
                 return;
@@ -125,7 +131,7 @@ class MarkdownParser extends Transform {
             case INLINE_STATE.LINK_TARGET:
                 if (c === `)`) {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    this.currentString = `<a href=${this.currentInlineString}>${this.linkText}</a>`;
+                    this.currentString = `<a href="${this.currentInlineString}">${this.linkText}</a>`;
                     this.inlineState = INLINE_STATE.REGULAR;
                     this.currentInlineString = ``;                    
                 } else {
@@ -135,9 +141,7 @@ class MarkdownParser extends Transform {
             default:
                 if (c === `\``) {
                     this.inside.push(this.state);
-                    if (this.state === STATE.FREE) {
-                        this.inside.push(STATE.TEXT);
-                    }
+                    
                     this.state = STATE.START_RAW;
                     this.backTicks = 1;
                 } else if (c === `[`) {
@@ -218,8 +222,13 @@ class MarkdownParser extends Transform {
                         this.items.push(this.currentString)
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
+                    } else if (isWhitespace(c)) {
+                        if (this.firstVisibleCharacterPassed) {
+                            this._selfBuffer(c);
+                        }
                     } else {
                         this._selfBuffer(c);
+                        this.firstVisibleCharacterPassed = true;
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -259,6 +268,9 @@ class MarkdownParser extends Transform {
                             this.state = STATE.RAW_DESCRIPTION;
                         }
                     } else {
+                        if (this.inside[this.inside.length - 1] === STATE.FREE) {
+                            this.inside.push(STATE.TEXT);
+                        }
                         this._selfBuffer(c);
                         this.state = STATE.RAW;
                     }
