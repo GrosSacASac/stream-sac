@@ -25,6 +25,21 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
+test(`streaming cut in half`, async t => {
+    const markdownParser = new MarkdownParser();
+    const t1 = `blablabla`
+    const t2 = `zzzzzzzzzzz`
+    concatAsStream([`${t1.substr(0,4)}`, `${t1.substr(4)}
+
+${t2}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
+});
 
 test(`title`, async t => {
     const markdownParser = new MarkdownParser();
