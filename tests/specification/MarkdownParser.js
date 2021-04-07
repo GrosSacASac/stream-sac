@@ -9,6 +9,23 @@ test(`MarkdownParser is a function`, t => {
     t.is(typeof MarkdownParser, `function`);
 });
 
+test(`paragraph`, async t => {
+    const markdownParser = new MarkdownParser();
+    const t1 = `blablabla`
+    const t2 = `zzzzzzzzzzz`
+    concatAsStream([`${t1}
+
+${t2}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
+});
+
+
 test(`title`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
@@ -53,21 +70,6 @@ test(`unordered list`, async t => {
     t.is(forceBuffer, (`<ul><li>${listItem}</li><li>${otherListItem}</li></ul>`));
 });
 
-test(`paragraph`, async t => {
-    const markdownParser = new MarkdownParser();
-    const t1 = `blablabla`
-    const t2 = `zzzzzzzzzzz`
-    concatAsStream([`${t1}
-
-${t2}`]).pipe(markdownParser);
-
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
-        forceBuffer = `${forceBuffer}${x}`;
-    });
-    await finished(markdownParser);
-    t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
-});
 
 test(`code block`, async t => {
     const markdownParser = new MarkdownParser();
@@ -83,4 +85,6 @@ ${code}\`\`\``]).pipe(markdownParser);
     await finished(markdownParser);
     t.is(forceBuffer, (`<pre><code class="language-${lang}">${code}</code></pre>`));
 });
+
+
 
