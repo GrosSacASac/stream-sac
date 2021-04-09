@@ -13,6 +13,7 @@ const STATE = {
     RAW: i++,
     START_TITLE: i++,
     TITLE_TEXT: i++,
+    ORDERED_LIST_START: i++,
     LIST_ITEM_TEXT: i++,
     LIST_ITEM_END: i++,
     LINK_TEXT: i++,
@@ -36,6 +37,7 @@ class MarkdownParser extends Transform {
         Object.assign(this, DEFAULT_OPTIONS, options);
         this.inside = [];
         this.items = [];
+        this.listTypeOrdered = [];
     }
 
     _refresh() {
@@ -45,6 +47,7 @@ class MarkdownParser extends Transform {
         this.currentInlineString = ``;
         this.linkText = ``;
         this.rawDescription = ``;
+        this.lastCharacter = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
@@ -99,11 +102,19 @@ class MarkdownParser extends Transform {
             } case STATE.LIST_ITEM_TEXT:
                 this.items.push(this.currentString);
             case STATE.LIST_ITEM_END:
-                toPush.push(`<ul>`);
+                
+                const wasOrdered = this.listTypeOrdered.pop();
+                let listContainerHtml;
+                if (wasOrdered) {
+                    listContainerHtml = `ol`;
+                } else {
+                    listContainerHtml = `ul`;
+                }
+                toPush.push(`<${listContainerHtml}>`);
                 this.items.forEach(item => {
                     toPush.push(`<li>${item}</li>`);
                 });
-                toPush.push(`</ul>`);
+                toPush.push(`</${listContainerHtml}>`);
                 this.items = [];
                 this._refresh();
                 break;
@@ -164,6 +175,7 @@ class MarkdownParser extends Transform {
 
         for (let i = 0; i < length; i += 1) {
             const c = asString[i];
+            // console.log(c, this.state);
             if (c === `\r`) {
                 continue;
             }
@@ -177,6 +189,10 @@ class MarkdownParser extends Transform {
                         this.titleLevel = 1;
                     } else if (c === `*` || c === `-`) {
                         this.state = STATE.LIST_ITEM_TEXT;
+                        this.listTypeOrdered.push(false);
+                    } else if (c === `0` || c === `1`) {
+                        this.state = STATE.ORDERED_LIST_START;
+                        this.lastCharacter = c;
                     } else if (isWhitespace(c)) {
 
                     } else {
@@ -214,6 +230,17 @@ class MarkdownParser extends Transform {
                         this._selfBuffer(c);
                     }
                     break;
+                case STATE.ORDERED_LIST_START:
+                    if (c === `.`) {
+                        this.state = STATE.LIST_ITEM_TEXT;
+                        this.listTypeOrdered.push(true);
+                    } else {
+                        // it was not a start of an ordered list after all
+                        this.state = STATE.TEXT;
+                        this._selfBuffer(this.lastCharacter);
+                        this._selfBuffer(c);
+                    }
+                    break;
                 case STATE.LIST_ITEM_TEXT:
                     if (!this._handleInline(c, toPush)) {
                         continue;
@@ -226,6 +253,8 @@ class MarkdownParser extends Transform {
                         if (this.firstVisibleCharacterPassed) {
                             this._selfBuffer(c);
                         }
+                    } else if (c === `.` && this.listTypeOrdered[this.listTypeOrdered.length - 1]) {
+                        // ignore dot for ordered list item
                     } else {
                         this._selfBuffer(c);
                         this.firstVisibleCharacterPassed = true;
@@ -246,6 +275,8 @@ class MarkdownParser extends Transform {
                         this._closeCurrent(toPush);
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
+                        this.state = STATE.LIST_ITEM_TEXT;
+                    } else if (Number.isFinite(Number(c))) {
                         this.state = STATE.LIST_ITEM_TEXT;
                     }
                     break;
