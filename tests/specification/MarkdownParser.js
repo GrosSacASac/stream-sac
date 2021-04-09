@@ -80,7 +80,7 @@ test(`strong`, async t => {
     });
     await finished(markdownParser);
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
-    t.is(forceBuffer, (`<strong>${x}</strong>`));
+    t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
 

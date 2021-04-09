@@ -23,6 +23,7 @@ const INLINE_STATE = {
     REGULAR: i++,
     AFTER_LINK_TEXT: i++,
     LINK_TARGET: i++,
+    STRONG: i++,
 }
 
 
@@ -38,6 +39,7 @@ class MarkdownParser extends Transform {
         this.inside = [];
         this.items = [];
         this.listTypeOrdered = [];
+        this.lastCharacter = ``;
     }
 
     _refresh() {
@@ -47,7 +49,6 @@ class MarkdownParser extends Transform {
         this.currentInlineString = ``;
         this.linkText = ``;
         this.rawDescription = ``;
-        this.lastCharacter = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
@@ -139,6 +140,17 @@ class MarkdownParser extends Transform {
                 }
                 this.currentString = ``;
                 break;
+            case INLINE_STATE.STRONG:
+                if (c === `*` && this.lastCharacter === `*`) {
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    
+                    // remove previous *
+                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
+                    this.currentInlineString = ``;
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
             case INLINE_STATE.LINK_TARGET:
                 if (c === `)`) {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
@@ -161,10 +173,19 @@ class MarkdownParser extends Transform {
                         this.inside.push(STATE.TEXT);
                     }
                     this.state = STATE.LINK_TEXT;
+                }  else if (c === `*` && this.lastCharacter === `*`) {
+                    // remove previous *
+                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                    this.inlineState = INLINE_STATE.STRONG;
+                    if (this.state === STATE.FREE) {
+                        this.inside.push(STATE.TEXT);
+                    }
                 } else {
                     return true;
                 }
         }
+        // the continue makes it skip
+        this.lastCharacter = c;
 
     }
 
@@ -175,7 +196,6 @@ class MarkdownParser extends Transform {
 
         for (let i = 0; i < length; i += 1) {
             const c = asString[i];
-            // console.log(c, this.state);
             if (c === `\r`) {
                 continue;
             }
@@ -187,12 +207,11 @@ class MarkdownParser extends Transform {
                     if (c === `#`) {
                         this.state = STATE.START_TITLE;
                         this.titleLevel = 1;
-                    } else if (c === `*` || c === `-`) {
+                    } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
                         this.state = STATE.LIST_ITEM_TEXT;
                         this.listTypeOrdered.push(false);
-                    } else if (c === `0` || c === `1`) {
+                    } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
                         this.state = STATE.ORDERED_LIST_START;
-                        this.lastCharacter = c;
                     } else if (isWhitespace(c)) {
 
                     } else {
@@ -334,6 +353,7 @@ class MarkdownParser extends Transform {
                     done(`Invalid state`);
                     return;
             }
+            this.lastCharacter = c;
         }
         this.push(toPush.join(``));
 
