@@ -69,6 +69,20 @@ test(`link`, async t => {
     t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`strong`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `important !`
+    concatAsStream([`**${x}**`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    t.is(forceBuffer, (`<strong>${x}</strong>`));
+});
+
 
 test(`unordered list`, async t => {
     const markdownParser = new MarkdownParser();
