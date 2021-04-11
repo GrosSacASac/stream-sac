@@ -25,6 +25,27 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
+test(`quote`, async t => {
+    const markdownParser = new MarkdownParser();
+    const quote = `An eye for an eye leaves the whole world blind`
+    const author = `Gandhi`
+    concatAsStream([`> ${quote}
+
+${author}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><blockquote>${quote}</blockquote></p><p>${author}</p>`));
+});
+
+// test(`inline quote`, async t => {
+//     // is this even possible in markdown ?
+//     <q></q>
+// });
+
 test(`streaming cut in half`, async t => {
     const markdownParser = new MarkdownParser();
     const t1 = `blablabla`
