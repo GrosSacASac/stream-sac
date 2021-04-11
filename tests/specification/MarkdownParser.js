@@ -79,8 +79,20 @@ test(`strong`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+});
+
+test(`emphasis`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    concatAsStream([`*${x}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });
 
 
