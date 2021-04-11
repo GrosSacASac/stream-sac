@@ -82,6 +82,19 @@ test(`strong`, async t => {
     t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
+test(`deleted`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><del>${x}</del></p>`));
+});
+
 test(`emphasis`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `notice me`
