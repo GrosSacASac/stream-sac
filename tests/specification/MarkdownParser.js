@@ -69,6 +69,21 @@ test(`link`, async t => {
     t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`image`, async t => {
+    const markdownParser = new MarkdownParser();
+    const altText = `drinking face`
+    const source = `../images/about.jpg`
+    concatAsStream([`![Picture](../images/about.jpg)`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    t.is(forceBuffer, (`<img alt="${altText}" src="${source}>`));
+});
+
 test(`strong`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `important !`
