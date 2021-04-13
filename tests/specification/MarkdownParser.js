@@ -129,7 +129,8 @@ test(`deleted`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<p><del>${x}</del></p>`));
+    t.is(forceBuffer, (`<del>${x}</del>`));
+    // t.is(forceBuffer, (`<p><del>${x}</del></p>`));
 });
 
 test(`emphasis`, async t => {

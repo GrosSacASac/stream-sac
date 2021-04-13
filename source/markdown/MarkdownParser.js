@@ -18,6 +18,7 @@ const STATE = {
     LIST_ITEM_END: i++,
     LINK_TEXT: i++,
     IMAGE_ALT: i++,
+    DELETED: i++,
 };
 
 const INLINE_STATE = {
@@ -72,6 +73,12 @@ class MarkdownParser extends Transform {
         switch (this.state) {
             case STATE.TEXT:
                 toPush.push(`<p>${this.currentString}</p>`);
+                this._refresh();
+                break;
+            case STATE.DELETED:
+                // remove last ~
+                this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                toPush.push(`<del>${this.currentString}</del>`);
                 this._refresh();
                 break;
             case STATE.TITLE_TEXT:
@@ -224,6 +231,12 @@ class MarkdownParser extends Transform {
                     if (this.state === STATE.FREE) {
                         this.inside.push(STATE.TEXT);
                     }
+                } else if (this.state !== STATE.DELETED && c === `~` && this.lastCharacter === `~`) {
+
+                    this.inside.push(this.state);
+                    // remove previous !
+                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                    this.state = STATE.DELETED;
                 } else {
                     return true;
                 }
@@ -289,6 +302,16 @@ class MarkdownParser extends Transform {
                     if (c === `]`) {
                         this.state = this.inside.pop() || STATE.FREE;
                         this.inlineState = INLINE_STATE.AFTER_LINK_TEXT;
+                    } else {
+                        this._selfBuffer(c);
+                    }
+                    break;
+                case STATE.DELETED:
+                    if (!this._handleInline(c, toPush)) {
+                        continue;
+                    }
+                    if (c === `~` && this.lastCharacter === `~`) {
+                        this._closeCurrent(toPush);
                     } else {
                         this._selfBuffer(c);
                     }
