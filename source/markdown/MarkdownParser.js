@@ -23,6 +23,7 @@ const INLINE_STATE = {
     REGULAR: i++,
     AFTER_LINK_TEXT: i++,
     LINK_TARGET: i++,
+    EM: i++,
     STRONG: i++,
 }
 
@@ -140,6 +141,19 @@ class MarkdownParser extends Transform {
                 }
                 this.currentString = ``;
                 break;
+            case INLINE_STATE.EM:
+                if (c === `*`) {
+                    if (!this.currentInlineString) {
+                        this.inlineState = INLINE_STATE.STRONG;
+                    } else {
+                        this.inlineState = INLINE_STATE.REGULAR;
+                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
+                        this.currentInlineString = ``;
+                    }
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
             case INLINE_STATE.STRONG:
                 if (c === `*` && this.lastCharacter === `*`) {
                     this.inlineState = INLINE_STATE.REGULAR;
@@ -172,11 +186,15 @@ class MarkdownParser extends Transform {
                     if (this.state === STATE.FREE) {
                         this.inside.push(STATE.TEXT);
                     }
-                    this.state = STATE.LINK_TEXT;
-                }  else if (c === `*` && this.lastCharacter === `*`) {
-                    // remove previous *
-                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                    this.inlineState = INLINE_STATE.STRONG;
+                    if (this.lastCharacter === `!`) {
+                        // remove previous !
+                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                        this.state = STATE.IMAGE_ALT;
+                    } else {
+                        this.state = STATE.LINK_TEXT;
+                    }
+                } else if (c === `*` && this.lastCharacter !== ` `) {
+                    this.inlineState = INLINE_STATE.EM;
                     if (this.state === STATE.FREE) {
                         this.inside.push(STATE.TEXT);
                     }
