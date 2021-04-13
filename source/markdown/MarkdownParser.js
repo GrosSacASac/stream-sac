@@ -17,12 +17,15 @@ const STATE = {
     LIST_ITEM_TEXT: i++,
     LIST_ITEM_END: i++,
     LINK_TEXT: i++,
+    IMAGE_ALT: i++,
 };
 
 const INLINE_STATE = {
     REGULAR: i++,
     AFTER_LINK_TEXT: i++,
     LINK_TARGET: i++,
+    AFTER_IMAGE_ALT: i++,
+    IMAGE_SOURCE: i++,
     EM: i++,
     STRONG: i++,
 }
@@ -141,6 +144,19 @@ class MarkdownParser extends Transform {
                 }
                 this.currentString = ``;
                 break;
+            case INLINE_STATE.AFTER_IMAGE_ALT:
+                if (c === `(`) {
+                    this.inlineState = INLINE_STATE.IMAGE_SOURCE;
+                    this.linkText = this.currentString;
+                } else {
+                    // not an image just regular text inside []
+                    this._selfInlineBuffer(c);
+                    this._selfBuffer(`![${this.currentString}`);
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    // we already poped before
+                }
+                this.currentString = ``;
+                break;
             case INLINE_STATE.EM:
                 if (c === `*`) {
                     if (!this.currentInlineString) {
@@ -175,6 +191,16 @@ class MarkdownParser extends Transform {
                     this._selfInlineBuffer(c);
                 }
                 break;
+            case INLINE_STATE.IMAGE_SOURCE:
+                if (c === `)`) {
+                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
+                    this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    this.currentInlineString = ``;                    
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
             default:
                 if (c === `\``) {
                     this.inside.push(this.state);
@@ -183,14 +209,14 @@ class MarkdownParser extends Transform {
                     this.backTicks = 1;
                 } else if (c === `[`) {
                     this.inside.push(this.state);
-                    if (this.state === STATE.FREE) {
-                        this.inside.push(STATE.TEXT);
-                    }
                     if (this.lastCharacter === `!`) {
                         // remove previous !
                         this.currentString = this.currentString.substring(0, this.currentString.length - 1);
                         this.state = STATE.IMAGE_ALT;
                     } else {
+                        if (this.state === STATE.FREE) {
+                            this.inside.push(STATE.TEXT);
+                        }
                         this.state = STATE.LINK_TEXT;
                     }
                 } else if (c === `*` && this.lastCharacter !== ` `) {
@@ -263,6 +289,17 @@ class MarkdownParser extends Transform {
                     if (c === `]`) {
                         this.state = this.inside.pop() || STATE.FREE;
                         this.inlineState = INLINE_STATE.AFTER_LINK_TEXT;
+                    } else {
+                        this._selfBuffer(c);
+                    }
+                    break;
+                case STATE.IMAGE_ALT:
+                    if (!this._handleInline(c, toPush)) {
+                        continue;
+                    }
+                    if (c === `]`) {
+                        this.state = this.inside.pop() || STATE.FREE;
+                        this.inlineState = INLINE_STATE.AFTER_IMAGE_ALT;
                     } else {
                         this._selfBuffer(c);
                     }

@@ -94,7 +94,7 @@ test(`image`, async t => {
     const markdownParser = new MarkdownParser();
     const altText = `drinking face`
     const source = `../images/about.jpg`
-    concatAsStream([`![Picture](../images/about.jpg)`]).pipe(markdownParser);
+    concatAsStream([`![${altText}](${source})`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -102,7 +102,7 @@ test(`image`, async t => {
     });
     await finished(markdownParser);
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
-    t.is(forceBuffer, (`<img alt="${altText}" src="${source}>`));
+    t.is(forceBuffer, (`<p><img alt="${altText}" src="${source}"></p>`));
 });
 
 test(`strong`, async t => {
