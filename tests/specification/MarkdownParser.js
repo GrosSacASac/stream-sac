@@ -38,7 +38,7 @@ ${author}`]).pipe(markdownParser);
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<p><blockquote>${quote}</blockquote></p><p>${author}</p>`));
+    t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
 });
 
 // test(`inline quote`, async t => {

@@ -19,6 +19,7 @@ const STATE = {
     LINK_TEXT: i++,
     IMAGE_ALT: i++,
     DELETED: i++,
+    QUOTE: i++,
 };
 
 const INLINE_STATE = {
@@ -72,7 +73,11 @@ class MarkdownParser extends Transform {
     _closeCurrent(toPush) {
         switch (this.state) {
             case STATE.TEXT:
-                toPush.push(`<p>${this.currentString}</p>`);
+                toPush.push(`<p>${this.currentString.trim()}</p>`);
+                this._refresh();
+                break;
+            case STATE.QUOTE:
+                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
                 this._refresh();
                 break;
             case STATE.DELETED:
@@ -269,6 +274,8 @@ class MarkdownParser extends Transform {
                         this.listTypeOrdered.push(false);
                     } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
                         this.state = STATE.ORDERED_LIST_START;
+                    } else if (c === `>`) {
+                        this.state = STATE.QUOTE;
                     } else if (isWhitespace(c)) {
 
                     } else {
@@ -278,6 +285,24 @@ class MarkdownParser extends Transform {
                     break;
 
                 case STATE.TEXT:
+                    if (!this._handleInline(c, toPush)) {
+                        continue;
+                    }
+                     if (c === `\n`) {
+                        if (this.newLined) {
+                            this._closeCurrent(toPush);
+                        } else {
+                            this.newLined = true;
+                        }
+                    } else {
+                        if (this.newLined) {
+                            this._selfBuffer(` `);
+                            this.newLined = false;
+                        }
+                        this._selfBuffer(c);
+                    }
+                    break;
+                case STATE.QUOTE:
                     if (!this._handleInline(c, toPush)) {
                         continue;
                     }
