@@ -1,7 +1,7 @@
 export { MarkdownParser };
 
 import { Transform } from "stream";
-import {isWhitespaceCharacter as isWhitespace} from "is-whitespace-character";
+import { isWhitespaceCharacter as isWhitespace } from "is-whitespace-character";
 
 
 let i = 0;
@@ -65,7 +65,7 @@ class MarkdownParser extends Transform {
     _selfBuffer(x) {
         this.currentString = `${this.currentString}${x}`;
     }
-    
+
     _selfInlineBuffer(x) {
         this.currentInlineString = `${this.currentInlineString}${x}`;
     }
@@ -114,12 +114,12 @@ class MarkdownParser extends Transform {
                         this.state = STATE.FREE;
                     }
                 }
-                
+
                 break;
             } case STATE.LIST_ITEM_TEXT:
                 this.items.push(this.currentString);
             case STATE.LIST_ITEM_END:
-                
+
                 const wasOrdered = this.listTypeOrdered.pop();
                 let listContainerHtml;
                 if (wasOrdered) {
@@ -185,7 +185,7 @@ class MarkdownParser extends Transform {
             case INLINE_STATE.STRONG:
                 if (c === `*` && this.lastCharacter === `*`) {
                     this.inlineState = INLINE_STATE.REGULAR;
-                    
+
                     // remove previous *
                     this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
                     this.currentInlineString = ``;
@@ -198,7 +198,7 @@ class MarkdownParser extends Transform {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
                     this.currentString = `<a href="${this.currentInlineString}">${this.linkText}</a>`;
                     this.inlineState = INLINE_STATE.REGULAR;
-                    this.currentInlineString = ``;                    
+                    this.currentInlineString = ``;
                 } else {
                     this._selfInlineBuffer(c);
                 }
@@ -208,7 +208,7 @@ class MarkdownParser extends Transform {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
                     this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
                     this.inlineState = INLINE_STATE.REGULAR;
-                    this.currentInlineString = ``;                    
+                    this.currentInlineString = ``;
                 } else {
                     this._selfInlineBuffer(c);
                 }
@@ -216,7 +216,7 @@ class MarkdownParser extends Transform {
             default:
                 if (c === `\``) {
                     this.inside.push(this.state);
-                    
+
                     this.state = STATE.START_RAW;
                     this.backTicks = 1;
                 } else if (c === `[`) {
@@ -288,7 +288,7 @@ class MarkdownParser extends Transform {
                     if (!this._handleInline(c, toPush)) {
                         continue;
                     }
-                     if (c === `\n`) {
+                    if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush);
                         } else {
@@ -306,7 +306,7 @@ class MarkdownParser extends Transform {
                     if (!this._handleInline(c, toPush)) {
                         continue;
                     }
-                     if (c === `\n`) {
+                    if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush);
                         } else {

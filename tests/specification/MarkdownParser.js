@@ -50,7 +50,7 @@ test(`streaming cut in half`, async t => {
     const markdownParser = new MarkdownParser();
     const t1 = `blablabla`
     const t2 = `zzzzzzzzzzz`
-    concatAsStream([`${t1.substr(0,4)}`, `${t1.substr(4)}
+    concatAsStream([`${t1.substr(0, 4)}`, `${t1.substr(4)}
 
 ${t2}`]).pipe(markdownParser);
 
@@ -193,6 +193,5 @@ ${code}\`\`\``]).pipe(markdownParser);
     await finished(markdownParser);
     t.is(forceBuffer, (`<pre><code class="language-${lang}">${code}</code></pre>`));
 });
-
 
 
