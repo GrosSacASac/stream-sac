@@ -1,6 +1,6 @@
 {
   "name": "stream-sac",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Utility functions",
   "license": "CC0-1.0",
   "type": "module",
@@ -57,6 +57,7 @@
     "minify"
   ],
   "dependencies": {
+    "html-escaper": "^3.0.3",
     "is-whitespace-character": "^2.0.0"
   }
 }

@@ -215,8 +215,7 @@ test(`inline html symbols are escaped`, async t => {
 test(`inline html stays as is `, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`
-    <p>8 &gt; 7</p>
-`]).pipe(markdownParser);
+    <p>8 &gt; 7</p>`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -224,4 +223,17 @@ test(`inline html stays as is `, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>8 &gt; 7</p>`));
+});
+
+test(`it is not inline html if invalid html`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    <1>*8 > 7*</1>`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>&lt;1&gt;<em>8 &gt; 7</em>&lt;/1&gt;</p>`));
 });

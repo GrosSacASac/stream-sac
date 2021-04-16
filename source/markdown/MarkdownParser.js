@@ -2,6 +2,18 @@ export { MarkdownParser };
 
 import { Transform } from "stream";
 import { isWhitespaceCharacter as isWhitespace } from "is-whitespace-character";
+import {escape as escapeHtml} from 'html-escaper';
+
+const isAsciiLetter = (c) => {
+    const ch = c.charCodeAt(0);
+	return (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+};
+
+const needsToBeEscaped = [
+    "&",
+    "<",
+    ">",
+];
 
 
 let i = 0;
@@ -20,6 +32,8 @@ const STATE = {
     IMAGE_ALT: i++,
     DELETED: i++,
     QUOTE: i++,
+    POTENTIAL_HTML: i++,
+    INISIDE_HTML: i++,
 };
 
 const INLINE_STATE = {
@@ -55,6 +69,7 @@ class MarkdownParser extends Transform {
         this.currentInlineString = ``;
         this.linkText = ``;
         this.rawDescription = ``;
+        this._currentTagName = ``;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
@@ -94,7 +109,7 @@ class MarkdownParser extends Transform {
             case STATE.RAW: {
                 let classText = ``;
                 if (this.rawDescription) {
-                    classText = ` class="${this.languagePrefix}${this.rawDescription}"`;
+                    classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
                 const codeBlock = `<code${classText}>${this.currentString}</code>`
                 let currentString;
@@ -179,6 +194,7 @@ class MarkdownParser extends Transform {
                         this.currentInlineString = ``;
                     }
                 } else {
+                    c = this._escapeHtml(c);
                     this._selfInlineBuffer(c);
                 }
                 break;
@@ -190,6 +206,7 @@ class MarkdownParser extends Transform {
                     this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
                     this.currentInlineString = ``;
                 } else {
+                    c = this._escapeHtml(c);
                     this._selfInlineBuffer(c);
                 }
                 break;
@@ -248,7 +265,13 @@ class MarkdownParser extends Transform {
         }
         // the continue makes it skip
         this.lastCharacter = c;
+    }
 
+    _escapeHtml(c) {
+        if (!needsToBeEscaped.includes(c)) {
+            return c;
+        }
+        return escapeHtml(c);
     }
 
     _transform(buffer, _, done) {
@@ -257,7 +280,7 @@ class MarkdownParser extends Transform {
         const toPush = []; // avoid pushing character by character
 
         for (let i = 0; i < length; i += 1) {
-            const c = asString[i];
+            let c = asString[i];
             if (c === `\r`) {
                 continue;
             }
@@ -278,9 +301,54 @@ class MarkdownParser extends Transform {
                         this.state = STATE.QUOTE;
                     } else if (isWhitespace(c)) {
 
+                    } else if (c === `<`) {
+                        this.state = STATE.POTENTIAL_HTML;
+                        this._selfBuffer(c);
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                         this.state = STATE.TEXT;
+                    }
+                    break;
+                case STATE.POTENTIAL_HTML:
+                    if ((isWhitespace(c) || !isAsciiLetter(c)) && this.lastCharacter === `<`) {
+                        // was not html
+                        this.state = STATE.TEXT;
+                        // correct and escape the <
+                        this.currentString = escapeHtml(this.currentString);
+                        this._selfBuffer(c);
+
+                    } else if (c === `>`) {
+                        let currentTagName = ``;
+                        for (let i = 0; i < this.currentString; i += 1) {
+                            if (!isAsciiLetter(this.currentString[i])) {
+                                break;
+                            }
+                            currentTagName = `${currentTagName}${this.currentString[i]}`;
+                        }
+                        this._currentTagName = currentTagName
+                        this.state = STATE.INISIDE_HTML;
+                        this._selfBuffer(c);
+
+                    } else {
+                        this._selfBuffer(c);
+                    }
+                    break;
+                case STATE.INISIDE_HTML:
+                    if (c === `>`) {
+                        if (this._currentTagName === this.currentString.slice(-this._currentTagName.length)) {
+
+                            this._selfBuffer(c);
+                            toPush.push(this.currentString);
+                            this.state = STATE.FREE;
+
+                        } else {
+
+                            this._selfBuffer(c);
+                        }
+                    } else {
+                        this._selfBuffer(c);
+                        
                     }
                     break;
 
@@ -295,6 +363,7 @@ class MarkdownParser extends Transform {
                             this.newLined = true;
                         }
                     } else {
+                        c = this._escapeHtml(c);
                         if (this.newLined) {
                             this._selfBuffer(` `);
                             this.newLined = false;
@@ -313,6 +382,7 @@ class MarkdownParser extends Transform {
                             this.newLined = true;
                         }
                     } else {
+                        c = this._escapeHtml(c);
                         if (this.newLined) {
                             this._selfBuffer(` `);
                             this.newLined = false;
@@ -328,6 +398,7 @@ class MarkdownParser extends Transform {
                         this.state = this.inside.pop() || STATE.FREE;
                         this.inlineState = INLINE_STATE.AFTER_LINK_TEXT;
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
@@ -338,6 +409,7 @@ class MarkdownParser extends Transform {
                     if (c === `~` && this.lastCharacter === `~`) {
                         this._closeCurrent(toPush);
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
@@ -349,6 +421,7 @@ class MarkdownParser extends Transform {
                         this.state = this.inside.pop() || STATE.FREE;
                         this.inlineState = INLINE_STATE.AFTER_IMAGE_ALT;
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
@@ -357,6 +430,7 @@ class MarkdownParser extends Transform {
                         this.state = STATE.LIST_ITEM_TEXT;
                         this.listTypeOrdered.push(true);
                     } else {
+                        c = this._escapeHtml(c);
                         // it was not a start of an ordered list after all
                         this.state = STATE.TEXT;
                         this._selfBuffer(this.lastCharacter);
@@ -378,6 +452,7 @@ class MarkdownParser extends Transform {
                     } else if (c === `.` && this.listTypeOrdered[this.listTypeOrdered.length - 1]) {
                         // ignore dot for ordered list item
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                         this.firstVisibleCharacterPassed = true;
                     }
@@ -389,6 +464,7 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         this._closeCurrent(toPush);
                     } else {
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
@@ -424,6 +500,7 @@ class MarkdownParser extends Transform {
                         if (this.inside[this.inside.length - 1] === STATE.FREE) {
                             this.inside.push(STATE.TEXT);
                         }
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                         this.state = STATE.RAW;
                     }
@@ -449,6 +526,7 @@ class MarkdownParser extends Transform {
                             this._selfBuffer(`\``.repeat(this.closingBackTicks));
                             this.closingBackTicks = 0;
                         }
+                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
