@@ -1,4 +1,4 @@
-import { streamifyStringFunction } from "../source/streamifyStringFunction.js";
+import { streamifyStringFunction } from "../../source/streamifyStringFunction.js";
 // import { pipeline } from "stream";
 
 const encode = c => {

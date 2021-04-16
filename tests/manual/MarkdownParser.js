@@ -1,9 +1,9 @@
 import fs from "fs";
 import { pipeline } from "stream";
-import { MarkdownParser } from "../source/markdown/MarkdownParser.js";
+import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
 
 const source = `./readme.md`;
-const destination =  `./tests/readme.html`;
+const destination =  `./tests/manual/readme.html`;
 const readStream = fs.createReadStream(source);
 const markdownParser = new MarkdownParser({});
 markdownParser.setEncoding(`utf8`);

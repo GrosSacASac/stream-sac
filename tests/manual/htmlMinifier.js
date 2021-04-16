@@ -1,10 +1,10 @@
-import { HtmlMinifier } from "../source/html/HtmlMinifier.js";
+import { HtmlMinifier } from "../../source/html/HtmlMinifier.js";
 import fs from "fs";
 import { pipeline } from "stream";
 
 
-const source = `./tests/html.html`;
-const destination =  `./tests/html.min.html`;
+const source = `./tests/manual/html.html`;
+const destination =  `./tests/manual/html.min.html`;
 const readStream = fs.createReadStream(source);
 const htmlMinifier = new HtmlMinifier({
     // jsMinifier: () => "",
