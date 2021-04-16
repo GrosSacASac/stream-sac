@@ -194,4 +194,34 @@ ${code}\`\`\``]).pipe(markdownParser);
     t.is(forceBuffer, (`<pre><code class="language-${lang}">${code}</code></pre>`));
 });
 
+test(`inline html symbols are escaped`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    8 > 7
 
+    7 < 8
+
+    1 & 1 = 2
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>8 &gt; 7</p><p>7 &lt; 8</p><p>1 &amp; 1 = 2</p>`));
+});
+
+test(`inline html stays as is `, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    <p>8 &gt; 7</p>
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>8 &gt; 7</p>`));
+});
