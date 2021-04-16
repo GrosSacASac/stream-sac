@@ -1,4 +1,4 @@
-import { concatAsStream } from "../source/concatAsStream.js";
+import { concatAsStream } from "../../source/concatAsStream.js";
 import { pipeline } from "stream";
 import fs from "fs";
 
