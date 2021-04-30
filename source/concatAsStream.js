@@ -16,7 +16,6 @@ const concatAsStream = (things, options = {}) => {
     let wantsToRead = true;
     const next = () => {
         currentThing = things.shift();
-        return Boolean(currentThing);
     };
     const readTheStream = function (size) {
         let result;
