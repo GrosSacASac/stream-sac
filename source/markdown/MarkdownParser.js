@@ -536,7 +536,10 @@ class MarkdownParser extends Transform {
             }
             this.lastCharacter = c;
         }
-        this.push(toPush.join(``));
+
+        if (toPush.length) {
+            this.push(toPush.join(``));
+        }
 
         done();
         return buffer.length;

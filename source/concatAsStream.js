@@ -13,6 +13,7 @@ const isPromise = (x) => {
 
 const concatAsStream = (things, options = {}) => {
     let currentThing;
+    let wantsToRead = true;
     const next = () => {
         currentThing = things.shift();
         return Boolean(currentThing);
@@ -24,7 +25,6 @@ const concatAsStream = (things, options = {}) => {
         }
     };
     const attachedMap = new WeakSet();
-    let wantsToRead = true;
     next();
     return new Readable({
         read(size) {
