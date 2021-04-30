@@ -178,6 +178,37 @@ test(`ordered list`, async t => {
     t.is(forceBuffer, (`<ol><li>${listItem}</li><li>${otherListItem}</li></ol>`));
 });
 
+test(`nested list`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`* Fruit
+  * Apple
+  * Orange
+  * Banana
+* Dairy
+  * Milk
+  * Cheese`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<ul><li>Fruit
+<ul>
+<li>Apple</li>
+<li>Orange</li>
+<li>Banana</li>
+</ul>
+</li>
+<li>Dairy
+<ul>
+<li>Milk</li>
+<li>Cheese</li>
+</ul>
+</li>
+</ul>`).replaceAll("\n", ""));
+});
+
 
 test(`code block`, async t => {
     const markdownParser = new MarkdownParser();
