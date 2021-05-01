@@ -274,7 +274,7 @@ class MarkdownParser extends Transform {
         return escapeHtml(c);
     }
 
-    _transform(buffer, _, done) {
+    _transform(buffer, encoding, done) {
         const asString = String(buffer);
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
