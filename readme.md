@@ -53,7 +53,17 @@ import {
 } from "stream-sac/source/markdown/MarkdownParser.js";
 
 const markdownStream = new MarkdownParser({
+    // optional
     languagePrefix: `language-`,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+            return hljs.highlight(lang, str).value;
+            } catch (__) {}
+        }
+    
+        return ``;
+    }
 });
 ```
 

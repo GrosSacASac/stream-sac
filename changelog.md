@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.0
+
+ * Handle links in the middle of the text
+ * Add highlight option
+
 ## 1.6.0
 
 Add streaming markdown parser

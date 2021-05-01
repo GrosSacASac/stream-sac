@@ -114,7 +114,15 @@ class MarkdownParser extends Transform {
                 const codeBlock = `<code${classText}>${this.currentString}</code>`
                 let currentString;
                 if (this.closingBackTicks === 3) {
-                    currentString = `<pre>${codeBlock}</pre>`;
+                    let highlighted;
+                    if (this.highlight) {
+                        highlighted = this.highlight(this.currentString, this.rawDescription);
+                    }
+                    if (highlighted) {
+                        currentString = `<pre><code${classText}>${highlighted}</code></pre>`;
+                    } else {
+                        currentString = `<pre>${codeBlock}</pre>`;
+                    }
                     toPush.push(currentString);
                     this.state = STATE.FREE;
                     this._refresh();
@@ -213,7 +221,7 @@ class MarkdownParser extends Transform {
             case INLINE_STATE.LINK_TARGET:
                 if (c === `)`) {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    this.currentString = `<a href="${this.currentInlineString}">${this.linkText}</a>`;
+                    this.currentString = `${this.currentStringBefore}<a href="${this.currentInlineString}">${this.linkText}</a>`;
                     this.inlineState = INLINE_STATE.REGULAR;
                     this.currentInlineString = ``;
                 } else {
@@ -247,6 +255,8 @@ class MarkdownParser extends Transform {
                             this.inside.push(STATE.TEXT);
                         }
                         this.state = STATE.LINK_TEXT;
+                        this.currentStringBefore = this.currentString;
+                        this.currentString = ``;
                     }
                 } else if (c === `*` && this.lastCharacter !== ` `) {
                     this.inlineState = INLINE_STATE.EM;

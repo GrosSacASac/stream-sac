@@ -90,6 +90,23 @@ test(`link`, async t => {
     t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`link in the middle of text`, async t => {
+    const markdownParser = new MarkdownParser();
+    let textbefore = `aaa`;
+    let textafter = `bbb`;
+    const linkTarget = `example.com`
+    const linkText = `example`
+    concatAsStream([`${textbefore}[${linkText}](${linkTarget})${textafter}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
+});
+
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();
     const altText = `drinking face`
