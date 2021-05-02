@@ -47,8 +47,15 @@ const INLINE_STATE = {
 }
 
 
+const identity = (x) => {
+    return x;
+};
+
 const DEFAULT_OPTIONS = {
     languagePrefix: `language-`,
+    highlight: undefined,
+    linkHrefHook: identity,
+    mediaHook: undefined,
 };
 
 class MarkdownParser extends Transform {
@@ -221,7 +228,7 @@ class MarkdownParser extends Transform {
             case INLINE_STATE.LINK_TARGET:
                 if (c === `)`) {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    this.currentString = `${this.currentStringBefore}<a href="${this.currentInlineString}">${this.linkText}</a>`;
+                    this.currentString = `${this.currentStringBefore}<a href="${this.linkHrefHook(this.currentInlineString)}">${this.linkText}</a>`;
                     this.inlineState = INLINE_STATE.REGULAR;
                     this.currentInlineString = ``;
                 } else {
@@ -231,7 +238,11 @@ class MarkdownParser extends Transform {
             case INLINE_STATE.IMAGE_SOURCE:
                 if (c === `)`) {
                     // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
+                    if (this.mediaHook) {
+                        this.currentString = this.mediaHook(this.currentInlineString, this.linkText);
+                    } else {
+                        this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
+                    }
                     this.inlineState = INLINE_STATE.REGULAR;
                     this.currentInlineString = ``;
                 } else {

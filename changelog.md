@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.0
+
+ * Add link href hook
+ * Add media hook
+ * allows to transform images into audio or video depending on the mime type of the extension
+
 ## 1.13.0
 
  * Handle links in the middle of the text

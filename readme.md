@@ -70,6 +70,12 @@ const markdownStream = new MarkdownParser({
 
 ## About
 
+### Logo
+
+TODO
+![Put logo here](https://miaou.dystroy.org/static/Miaou.svg)
+
+
 ### Changelog
 
 [Changelog](./changelog.md)
