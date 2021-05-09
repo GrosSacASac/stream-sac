@@ -287,6 +287,19 @@ test(`inline html stays as is `, async t => {
     t.is(forceBuffer, (`<p>8 &gt; 7</p>`));
 });
 
+
+test(`inline html inside a markdown element stays as is `, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([` * <strong>1</strong>`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<ul><li><strong>1</strong></li></ul>`));
+});
+
 test(`it is not inline html if invalid html`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`
