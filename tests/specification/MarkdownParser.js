@@ -90,6 +90,20 @@ test(`link`, async t => {
     t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`auto detect link`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://gitlab.com/GrosSacASac/blog-engine-z/`;
+    concatAsStream([`${linkTarget}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    t.is(forceBuffer, `<p><a href="${linkTarget}">${linkTarget}</a></p>`);
+});
+
 test(`link in the middle of text`, async t => {
     const markdownParser = new MarkdownParser();
     let textbefore = `aaa`;
