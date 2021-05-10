@@ -465,6 +465,7 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.LIST_ITEM_TEXT:
                     if (!this._handleInline(c, toPush)) {
+                        this.firstVisibleCharacterPassed = true;
                         continue;
                     }
                     if (c === `\n`) {
