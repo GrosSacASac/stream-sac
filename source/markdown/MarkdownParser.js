@@ -274,6 +274,11 @@ class MarkdownParser extends Transform {
                     if (this.state === STATE.FREE) {
                         this.inside.push(STATE.TEXT);
                     }
+                }  else if (c === `<`) {
+                    this.inside.push(this.state);
+                    this.state = STATE.POTENTIAL_HTML;
+                    this._selfBuffer(c);
+                    
                 } else if (this.state !== STATE.DELETED && c === `~` && this.lastCharacter === `~`) {
 
                     this.inside.push(this.state);
@@ -306,43 +311,22 @@ class MarkdownParser extends Transform {
                 continue;
             }
             switch (this.state) {
-                case STATE.FREE:
-                    if (!this._handleInline(c)) {
-                        continue;
-                    }
-                    if (c === `#`) {
-                        this.state = STATE.START_TITLE;
-                        this.titleLevel = 1;
-                    } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
-                        this.state = STATE.LIST_ITEM_TEXT;
-                        this.listTypeOrdered.push(false);
-                    } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
-                        this.state = STATE.ORDERED_LIST_START;
-                    } else if (c === `>`) {
-                        this.state = STATE.QUOTE;
-                    } else if (isWhitespace(c)) {
-
-                    } else if (c === `<`) {
-                        this.state = STATE.POTENTIAL_HTML;
-                        this._selfBuffer(c);
-                    } else {
-                        c = this._escapeHtml(c);
-                        this._selfBuffer(c);
-                        this.state = STATE.TEXT;
-                    }
-                    break;
                 case STATE.POTENTIAL_HTML:
-                    if ((isWhitespace(c) || !isAsciiLetter(c)) && this.lastCharacter === `<`) {
+                    if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
-                        this.state = STATE.TEXT;
+                        this.state = this.inside.pop();
+                        if (this.state === STATE.FREE) {
+                            this.state = STATE.TEXT;
+                        }
                         // correct and escape the <
-                        this.currentString = escapeHtml(this.currentString);
+                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                        this._selfBuffer(escapeHtml(`<`));
                         this._selfBuffer(c);
 
                     } else if (c === `>`) {
                         let currentTagName = ``;
-                        for (let i = 0; i < this.currentString; i += 1) {
-                            if (!isAsciiLetter(this.currentString[i])) {
+                        for (let i = 1; i < this.currentString.length; i += 1) {
+                            if (!isAsciiLetter(this.currentString[i]) && this.currentString[i] !== `-`) {
                                 break;
                             }
                             currentTagName = `${currentTagName}${this.currentString[i]}`;
@@ -360,9 +344,7 @@ class MarkdownParser extends Transform {
                         if (this._currentTagName === this.currentString.slice(-this._currentTagName.length)) {
 
                             this._selfBuffer(c);
-                            toPush.push(this.currentString);
-                            this.state = STATE.FREE;
-
+                            this.state = this.inside.pop();
                         } else {
 
                             this._selfBuffer(c);
@@ -370,6 +352,29 @@ class MarkdownParser extends Transform {
                     } else {
                         this._selfBuffer(c);
                         
+                    }
+                    break;
+
+                case STATE.FREE:
+                    if (!this._handleInline(c)) {
+                        continue;
+                    }
+                    if (c === `#`) {
+                        this.state = STATE.START_TITLE;
+                        this.titleLevel = 1;
+                    } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
+                        this.state = STATE.LIST_ITEM_TEXT;
+                        this.listTypeOrdered.push(false);
+                    } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
+                        this.state = STATE.ORDERED_LIST_START;
+                    } else if (c === `>`) {
+                        this.state = STATE.QUOTE;
+                    } else if (isWhitespace(c)) {
+
+                    } else {
+                        c = this._escapeHtml(c);
+                        this._selfBuffer(c);
+                        this.state = STATE.TEXT;
                     }
                     break;
 
