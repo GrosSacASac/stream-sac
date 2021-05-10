@@ -77,7 +77,7 @@ test(`title`, async t => {
 
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `example.com`
+    const linkTarget = `https://example.com/`
     const linkText = `example`
     concatAsStream([`[${linkText}](${linkTarget})`]).pipe(markdownParser);
 
@@ -86,8 +86,8 @@ test(`link`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
-    t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
+    t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
+    // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
 test(`auto detect link`, async t => {
