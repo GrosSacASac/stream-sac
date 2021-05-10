@@ -161,6 +161,19 @@ test(`raw inline`, async t => {
     t.is(forceBuffer, (`<p><code>${text}</code></p>`));
 });
 
+test(`raw in the midlle of a paragraph`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `*special text*`
+    concatAsStream([`Want to make text look big ? Think about the reason first, maybe it is a title and \`<h1-6>\` should be used.`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>Want to make text look big ? Think about the reason first, maybe it is a title and <code>&lt;h1-6&gt;</code> should be used.</p>`));
+});
+
 
 test(`raw html code is displayed properly`, async t => {
     const markdownParser = new MarkdownParser();
