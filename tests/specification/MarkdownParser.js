@@ -213,6 +213,21 @@ test(`strong`, async t => {
     // t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
+
+test(`strong alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `important !`
+    concatAsStream([`__${x}__`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<strong>${x}</strong>`));
+    // t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+});
+
 test(`deleted`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `removed !`
@@ -231,6 +246,20 @@ test(`emphasis`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `notice me`
     concatAsStream([`*${x}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<em>${x}</em>`));
+    // t.is(forceBuffer, (`<p><em>${x}</em></p>`));
+});
+
+test(`emphasis alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    concatAsStream([`_${x}_`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {

@@ -43,7 +43,9 @@ const INLINE_STATE = {
     AFTER_IMAGE_ALT: i++,
     IMAGE_SOURCE: i++,
     EM: i++,
+    EM_ALT: i++,
     STRONG: i++,
+    STRONG_ALT: i++,
 }
 
 
@@ -213,8 +215,34 @@ class MarkdownParser extends Transform {
                     this._selfInlineBuffer(c);
                 }
                 break;
+            case INLINE_STATE.EM_ALT:
+                if (c === `_`) {
+                    if (!this.currentInlineString) {
+                        this.inlineState = INLINE_STATE.STRONG_ALT;
+                    } else {
+                        this.inlineState = INLINE_STATE.REGULAR;
+                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
+                        this.currentInlineString = ``;
+                    }
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
             case INLINE_STATE.STRONG:
                 if (c === `*` && this.lastCharacter === `*`) {
+                    this.inlineState = INLINE_STATE.REGULAR;
+
+                    // remove previous *
+                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
+                    this.currentInlineString = ``;
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            case INLINE_STATE.STRONG_ALT:
+                if (c === `_` && this.lastCharacter === `_`) {
                     this.inlineState = INLINE_STATE.REGULAR;
 
                     // remove previous *
@@ -274,7 +302,12 @@ class MarkdownParser extends Transform {
                     if (this.state === STATE.FREE) {
                         this.inside.push(STATE.TEXT);
                     }
-                }  else if (c === `<`) {
+                } else if (c === `_`) {
+                    this.inlineState = INLINE_STATE.EM_ALT;
+                    if (this.state === STATE.FREE) {
+                        this.inside.push(STATE.TEXT);
+                    }
+                } else if (c === `<`) {
                     this.inside.push(this.state);
                     this.state = STATE.POTENTIAL_HTML;
                     this._selfBuffer(c);
