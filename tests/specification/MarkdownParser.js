@@ -121,6 +121,45 @@ test(`link in the middle of text`, async t => {
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
 });
 
+
+test(`raw inline`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `*special text*`
+    concatAsStream([`
+    \`${text}\`
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><code>${text}</code></p>`));
+});
+
+
+test(`raw html code is displayed properly`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    \`\`\`html
+<style>
+    .block{display: block; margin-bottom: 0.5em;}
+</style>
+\`\`\`
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<pre><code class="language-html">&lt;style&gt;
+    .block{display: block; margin-bottom: 0.5em;}
+&lt;/style&gt;
+</code></pre>`));
+});
+
+
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();
     const altText = `drinking face`
