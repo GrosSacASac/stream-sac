@@ -118,7 +118,7 @@ class MarkdownParser extends Transform {
                 if (this.rawDescription) {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
-                const codeBlock = `<code${classText}>${this.currentString}</code>`
+                
                 let currentString;
                 if (this.closingBackTicks === 3) {
                     let highlighted;
@@ -128,13 +128,13 @@ class MarkdownParser extends Transform {
                     if (highlighted) {
                         currentString = `<pre><code${classText}>${highlighted}</code></pre>`;
                     } else {
-                        currentString = `<pre>${codeBlock}</pre>`;
+                        currentString = `<pre><code${classText}>${escapeHtml(this.currentString)}</code></pre>`;
                     }
                     toPush.push(currentString);
                     this.state = STATE.FREE;
                     this._refresh();
                 } else {
-                    currentString = codeBlock;
+                    currentString = `<code${classText}>${escapeHtml(this.currentString)}</code>`;
                     this._refresh();
                     if (this.inside.length) {
                         this.currentString = currentString;
@@ -526,7 +526,6 @@ class MarkdownParser extends Transform {
                         if (this.inside[this.inside.length - 1] === STATE.FREE) {
                             this.inside.push(STATE.TEXT);
                         }
-                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                         this.state = STATE.RAW;
                     }
@@ -552,7 +551,7 @@ class MarkdownParser extends Transform {
                             this._selfBuffer(`\``.repeat(this.closingBackTicks));
                             this.closingBackTicks = 0;
                         }
-                        c = this._escapeHtml(c);
+                        
                         this._selfBuffer(c);
                     }
                     break;
