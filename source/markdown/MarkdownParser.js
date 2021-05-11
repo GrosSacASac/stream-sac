@@ -42,6 +42,8 @@ const STATE = {
     RAW: i++,
     START_TITLE: i++,
     TITLE_TEXT: i++,
+    UNDERTITLE1: i++,
+    UNDERTITLE2: i++,
     ORDERED_LIST_START: i++,
     LIST_ITEM_TEXT: i++,
     LIST_ITEM_END: i++,
@@ -368,6 +370,20 @@ class MarkdownParser extends Transform {
                 continue;
             }
             switch (this.state) {
+                case STATE.UNDERTITLE1:
+                    if (c === `\n`) {
+                        this.titleLevel = 1
+                        this.state = STATE.TITLE_TEXT;
+                        this._closeCurrent(toPush);
+                    }
+                    break;
+                    case STATE.UNDERTITLE2:
+                        if (c === `\n`) {
+                        this.titleLevel = 2
+                        this.state = STATE.TITLE_TEXT;
+                        this._closeCurrent(toPush);
+                    }
+                    break;
                 case STATE.POTENTIAL_HTML:
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
@@ -452,6 +468,10 @@ class MarkdownParser extends Transform {
                         } else {
                             this.newLined = true;
                         }
+                    } else if (c === `=` && this.newLined) {
+                        this.state = STATE.UNDERTITLE1;
+                    } else if (c === `-` && this.newLined) {
+                        this.state = STATE.UNDERTITLE2;
                     } else {
                         c = this._escapeHtml(c);
                         if (this.newLined) {

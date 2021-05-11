@@ -79,7 +79,8 @@ test(`title alternative`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
     concatAsStream([`${titleText}
-========`]).pipe(markdownParser);
+========
+`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -102,11 +103,12 @@ test(`title 2`, async t => {
     t.is(forceBuffer, `<h2>${titleText}</h2>`);
 });
 
-test(`title alternative`, async t => {
+test(`title 2 alternative`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
     concatAsStream([`${titleText}
------`]).pipe(markdownParser);
+-----
+`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
