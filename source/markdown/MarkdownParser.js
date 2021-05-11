@@ -40,6 +40,7 @@ const STATE = {
     START_RAW: i++,
     RAW_DESCRIPTION: i++,
     RAW: i++,
+    CLOSING_RAW: i++,
     START_TITLE: i++,
     TITLE_TEXT: i++,
     UNDERTITLE1: i++,
@@ -140,7 +141,7 @@ class MarkdownParser extends Transform {
                 this._refresh();
                 this.state = STATE.FREE;
                 break;
-            case STATE.RAW: {
+            case STATE.CLOSING_RAW: {
                 let classText = ``;
                 if (this.rawDescription) {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
@@ -370,6 +371,17 @@ class MarkdownParser extends Transform {
             let c = asString[i];
             if (c === `\r`) {
                 continue;
+            }
+            if (this.state === STATE.CLOSING_RAW) {
+                if (c === `\``) {
+                    this.closingBackTicks += 1;
+                    continue;
+                } else {
+                    if (this.closingBackTicks > this.backTicks) {
+                        this._selfInlineBuffer(`\``.repeat(this.closingBackTicks - this.backTicks));
+                    }
+                    this._closeCurrent(toPush);
+                }
             }
             switch (this.state) {
                 case STATE.UNDERTITLE1:
@@ -643,6 +655,12 @@ class MarkdownParser extends Transform {
                         this.currentInlineString = ``;
                         this.rawDescription = description;
                         this.state = STATE.RAW;
+                    } else if (c === ` `) {
+                        // not in the description but in the raw text all along
+                        this.inlineRaw = true;
+                        this.inside.push(STATE.TEXT);
+                        this.state = STATE.RAW;
+                        this._selfInlineBuffer(c);
                     } else {
                         this._selfInlineBuffer(c);
                     }
@@ -651,7 +669,7 @@ class MarkdownParser extends Transform {
                     if (c === `\``) {
                         this.closingBackTicks += 1;
                         if (this.closingBackTicks === this.backTicks) {
-                            this._closeCurrent(toPush);
+                            this.state = STATE.CLOSING_RAW;
                         }
                     } else {
                         if (this.closingBackTicks) {

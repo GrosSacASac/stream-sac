@@ -235,7 +235,7 @@ test(`raw in the middle of a paragraph`, async t => {
 
 test(`raw with backticks inside`, async t => {
     const markdownParser = new MarkdownParser();
-    concatAsStream([`\`\`\`typeof x === \`string\` \`\`\` for type checking .`]).pipe(markdownParser);
+    concatAsStream([`\`\`\`typeof x === \`string\`\`\`\` for type checking .`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
