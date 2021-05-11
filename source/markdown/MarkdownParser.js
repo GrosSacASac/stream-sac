@@ -113,6 +113,9 @@ class MarkdownParser extends Transform {
 
     _closeCurrent(toPush) {
         switch (this.state) {
+            // case STATE.FREE:
+            //     toPush.push(this.currentString);
+            //     break;
             case STATE.TEXT:
                 toPush.push(`<p>${this.currentString.trim()}</p>`);
                 this._refresh();
@@ -124,8 +127,9 @@ class MarkdownParser extends Transform {
             case STATE.DELETED:
                 // remove last ~
                 this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                toPush.push(`<del>${this.currentString}</del>`);
+                const currentString = (`<del>${this.currentString}</del>`);
                 this._refresh();
+                this.currentString = currentString;
                 break;
             case STATE.TITLE_TEXT:
                 toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
@@ -386,6 +390,8 @@ class MarkdownParser extends Transform {
                         }
                         this._selfBuffer(c);
                         if (emptyElements.includes(currentTagName)) {
+                            toPush.push(this.currentString);
+                            this._refresh();
                             this.state = this.inside.pop();
                         } else {
                             this._currentTagName = currentTagName;
@@ -631,6 +637,10 @@ class MarkdownParser extends Transform {
     _flush(done) {
         const toPush = [];
         this._closeCurrent(toPush);
+        while (this.inside.length) {
+            this.state = this.inside.pop();
+            this._closeCurrent(toPush);
+        }
         toPush.forEach(string => {
             this.push(string);
         });

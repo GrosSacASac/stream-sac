@@ -267,8 +267,7 @@ test(`strong`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<strong>${x}</strong>`));
-    // t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+    t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
 
@@ -282,8 +281,7 @@ test(`strong alternative syntax`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<strong>${x}</strong>`));
-    // t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+    t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
 test(`deleted`, async t => {
@@ -296,8 +294,7 @@ test(`deleted`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<del>${x}</del>`));
-    // t.is(forceBuffer, (`<p><del>${x}</del></p>`));
+    t.is(forceBuffer, (`<p><del>${x}</del></p>`));
 });
 
 test(`emphasis`, async t => {
@@ -310,8 +307,7 @@ test(`emphasis`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<em>${x}</em>`));
-    // t.is(forceBuffer, (`<p><em>${x}</em></p>`));
+    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });
 
 test(`emphasis alternative syntax`, async t => {
@@ -324,8 +320,7 @@ test(`emphasis alternative syntax`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<em>${x}</em>`));
-    // t.is(forceBuffer, (`<p><em>${x}</em></p>`));
+    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });
 
 
