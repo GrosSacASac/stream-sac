@@ -133,7 +133,7 @@ class MarkdownParser extends Transform {
                         currentInlineString = `<pre><code${classText}>${escapeHtml(this.currentInlineString)}</code></pre>`;
                     }
                     
-                    this._selfBuffer(currentInlineString);
+                    toPush.push(currentInlineString);
                     this.state = STATE.FREE;
                 } else {
                     currentInlineString = `<code${classText}>${escapeHtml(this.currentInlineString)}</code>`;
