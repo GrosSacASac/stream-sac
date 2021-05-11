@@ -1,5 +1,6 @@
 // not used
 // when STATE.TEXT is closed, it does not know if it already processed links
+// also see https://github.com/Canop/miaou/blob/9f5546c84d78f0ea61d624f516bc60a4e3892263/src/main-js/miaou.fmt.js
 const autoLinkRawText = (text) => {
     const index = text.indexOf("https://");
     if (index === -1) {
