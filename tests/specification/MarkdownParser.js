@@ -471,3 +471,24 @@ test(`it should handle empty html elements`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
 });
+
+// convulated tests below
+
+test(`it should not mix elements`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`# a
+
+    <img src="b" alt="c">
+    
+    _d_
+    
+    ## e
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<h1>a</h1><img src="b" alt="c"><p><em>d</em></p><h2>e</h2>`));
+});

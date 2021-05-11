@@ -423,6 +423,7 @@ class MarkdownParser extends Transform {
                         continue;
                     }
                     if (c === `#`) {
+                        this._closeAllPrevious(toPush);
                         this.state = STATE.START_TITLE;
                         this.titleLevel = 1;
                     } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
@@ -634,13 +635,16 @@ class MarkdownParser extends Transform {
         return buffer.length;
     }
 
-    _flush(done) {
-        const toPush = [];
+    _closeAllPrevious(toPush) {
         this._closeCurrent(toPush);
         while (this.inside.length) {
             this.state = this.inside.pop();
             this._closeCurrent(toPush);
         }
+    }
+    _flush(done) {
+        const toPush = [];
+        this._closeAllPrevious(toPush);
         toPush.forEach(string => {
             this.push(string);
         });
