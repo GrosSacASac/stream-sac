@@ -221,7 +221,7 @@ test(`raw inline`, async t => {
     t.is(forceBuffer, (`<p><code>${text}</code></p>`));
 });
 
-test(`raw in the midlle of a paragraph`, async t => {
+test(`raw in the middle of a paragraph`, async t => {
     const markdownParser = new MarkdownParser();
     const text = `*special text*`
     concatAsStream([`Want to make text look big ? Think about the reason first, maybe it is a title and \`<h1-6>\` should be used.`]).pipe(markdownParser);
@@ -232,6 +232,19 @@ test(`raw in the midlle of a paragraph`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>Want to make text look big ? Think about the reason first, maybe it is a title and <code>&lt;h1-6&gt;</code> should be used.</p>`));
+});
+
+test(`raw in the middle of a paragraph with triple backticks`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `*special text*`
+    concatAsStream([`a \`\`\`<h1-6>\`\`\` c`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>a <code>&lt;h1-6&gt;</code> c</p>`));
 });
 
 

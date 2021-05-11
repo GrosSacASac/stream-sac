@@ -99,6 +99,7 @@ class MarkdownParser extends Transform {
         this.linkText = ``;
         this.rawDescription = ``;
         this._currentTagName = ``;
+        this.inlineRaw = true;
         this.titleLevel = 0;
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
@@ -146,7 +147,7 @@ class MarkdownParser extends Transform {
                 }
                 
                 let currentInlineString;
-                if (this.closingBackTicks === 3) {
+                if (!this.inlineRaw) {
                     this.currentInlineString = this.currentInlineString.trim();
                     let highlighted;
                     if (this.highlight) {
@@ -617,20 +618,29 @@ class MarkdownParser extends Transform {
                     if (c === `\``) {
                         this.backTicks += 1;
                         if (this.backTicks === 3) {
-                            this.state = STATE.RAW_DESCRIPTION;
-                        }
+                            if (this.inside[this.inside.length - 1] !== STATE.FREE) {
+                                this.state = STATE.RAW;
+                                this.inlineRaw = true;
+                            } else {
+                                this.state = STATE.RAW_DESCRIPTION;
+                                this.inlineRaw = false;
+                            }
+                            
+                        } 
                     } else {
                         if (this.inside[this.inside.length - 1] === STATE.FREE) {
                             this.inside.push(STATE.TEXT);
                         }
                         this._selfInlineBuffer(c);
                         this.state = STATE.RAW;
+                        this.inlineRaw = true;
                     }
                     break;
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
                         const description = this.currentInlineString;
-                        this._refresh();
+                        // this._refresh();
+                        this.currentInlineString = ``;
                         this.rawDescription = description;
                         this.state = STATE.RAW;
                     } else {
