@@ -148,6 +148,7 @@ class MarkdownParser extends Transform {
                 }
                 this.currentInlineString = ``;
                 this.rawDescription = ``;
+                this.closingBackTicks = 0;
 
                 break;
             } case STATE.LIST_ITEM_TEXT:
