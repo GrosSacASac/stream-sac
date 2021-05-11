@@ -15,6 +15,23 @@ const needsToBeEscaped = [
     ">",
 ];
 
+const emptyElements = [
+    `area`,
+    `base`,
+    `br`,
+    `col`,
+    `embed`,
+    `hr`,
+    `img`,
+    `input`,
+    `link`,
+    `meta`,
+    `param`,
+    `source`,
+    `track`,
+    `wbr`,
+];
+
 
 let i = 0;
 const STATE = {
@@ -367,9 +384,13 @@ class MarkdownParser extends Transform {
                             }
                             currentTagName = `${currentTagName}${this.currentString[i]}`;
                         }
-                        this._currentTagName = currentTagName
-                        this.state = STATE.INISIDE_HTML;
                         this._selfBuffer(c);
+                        if (emptyElements.includes(currentTagName)) {
+                            this.state = this.inside.pop();
+                        } else {
+                            this._currentTagName = currentTagName;
+                            this.state = STATE.INISIDE_HTML;
+                        }
 
                     } else {
                         this._selfBuffer(c);

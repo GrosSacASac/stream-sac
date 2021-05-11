@@ -462,3 +462,17 @@ test(`it is not inline html if invalid html`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>&lt;1&gt;<em>8 &gt; 7</em>&lt;/1&gt;</p>`));
 });
+
+test(`it should handle empty html elements`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`<img src="a" alt="b">
+
+    _c_`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
+});
