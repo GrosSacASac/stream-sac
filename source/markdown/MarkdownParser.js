@@ -51,6 +51,7 @@ const STATE = {
     IMAGE_ALT: i++,
     DELETED: i++,
     QUOTE: i++,
+    HORIZONTAL_RULE: i++,
     POTENTIAL_HTML: i++,
     INISIDE_HTML: i++,
 };
@@ -377,11 +378,17 @@ class MarkdownParser extends Transform {
                         this._closeCurrent(toPush);
                     }
                     break;
-                    case STATE.UNDERTITLE2:
+                case STATE.UNDERTITLE2:
                         if (c === `\n`) {
                         this.titleLevel = 2
                         this.state = STATE.TITLE_TEXT;
                         this._closeCurrent(toPush);
+                    }
+                    break;
+                case STATE.HORIZONTAL_RULE:
+                    if (c === `\n`) {
+                        toPush.push(`<hr>`);
+                        this._refresh();
                     }
                     break;
                 case STATE.POTENTIAL_HTML:
@@ -560,6 +567,11 @@ class MarkdownParser extends Transform {
                         if (this.firstVisibleCharacterPassed) {
                             this._selfBuffer(c);
                         }
+                    } else if (!this.items.length && c === `-` && this.lastCharacter === `-`) {
+                        this.state = STATE.HORIZONTAL_RULE;
+                        this._closeAllPrevious(toPush);
+                        this._refresh();
+                        this.state = STATE.HORIZONTAL_RULE;
                     } else if (c === `.` && this.listTypeOrdered[this.listTypeOrdered.length - 1]) {
                         // ignore dot for ordered list item
                     } else {

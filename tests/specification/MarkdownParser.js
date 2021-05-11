@@ -118,6 +118,23 @@ test(`title 2 alternative`, async t => {
     t.is(forceBuffer, `<h2>${titleText}</h2>`);
 });
 
+test(`separator`, async t => {
+    const markdownParser = new MarkdownParser();
+    const titleText = `title`
+    concatAsStream([`a
+
+-----
+
+b`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, `<p>a</p><hr><p>b</p>`);
+});
+
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`
