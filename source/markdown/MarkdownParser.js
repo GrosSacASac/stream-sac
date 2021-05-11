@@ -123,6 +123,7 @@ class MarkdownParser extends Transform {
                 
                 let currentInlineString;
                 if (this.closingBackTicks === 3) {
+                    this.currentInlineString = this.currentInlineString.trim();
                     let highlighted;
                     if (this.highlight) {
                         highlighted = this.highlight(this.currentInlineString, this.rawDescription);

@@ -192,9 +192,34 @@ test(`raw html code is displayed properly`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<pre><code class="language-html">&lt;style&gt;
     .block{display: block; margin-bottom: 0.5em;}
-&lt;/style&gt;
-</code></pre>`));
+&lt;/style&gt;</code></pre>`));
 });
+
+
+test(`raw and titles`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    ## a
+
+    \`\`\`
+    b
+    \`\`\`
+    
+    ## d
+    
+    \`\`\`e
+    f
+    \`\`\`
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);  
+    t.is(forceBuffer, (`<h2>a</h2><pre><code>b</code></pre><h2>d</h2><pre><code class="language-e">f</code></pre>`));
+});
+
 
 
 test(`image`, async t => {
