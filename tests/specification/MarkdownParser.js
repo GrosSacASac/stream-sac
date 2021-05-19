@@ -169,6 +169,23 @@ test(`reference link`, async t => {
     // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`reference link with only text`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://example.com/`
+    const linkText = `example` 
+    concatAsStream([`[${linkText}]
+
+[${linkText}]: ${linkTarget}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
+    // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
+});
+
 
 
 test(`auto detect link`, async t => {
