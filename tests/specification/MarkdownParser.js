@@ -150,6 +150,27 @@ test(`link`, async t => {
     // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`reference link`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://example.com/`
+    const linkText = `example` 
+    const linkRef = `example and you` 
+    const linkRefUppercase = linkText.toUpperCase();
+    concatAsStream([`[${linkText}][${linkRef}]
+
+[${linkRefUppercase}]: ${linkTarget}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
+    // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
+});
+
+
+
 test(`auto detect link`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://gitlab.com/GrosSacASac/blog-engine-z/`;
