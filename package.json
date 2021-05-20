@@ -1,6 +1,6 @@
 {
   "name": "stream-sac",
-  "version": "1.15.14",
+  "version": "1.16.0",
   "description": "Utility functions",
   "license": "CC0-1.0",
   "type": "module",

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.16.0 Unfinished
+
+Change how MarkdownParser works internally
+
+Instead of checking character by character and pushing characters one by one, and pushing `<em>xxx</em>` when the closing part is found,
+
+we store indexes
+
+like `_` seen at position 4 and 12 and when the paragraph is over we try to generate the whole markup at once if possible.
+
+Why this change ?
+
+Previously  when for example a  `_` is found but not the closing one, we had to rollback what was already pushed on a stack. This is error prone as we have to restore the `_` character as well as handling every opening and closing markdown parsing. And detecting links would be complicated since links can contain `_`.
+
+
+
+
 ## 1.14.0
 
  * Add link href hook
