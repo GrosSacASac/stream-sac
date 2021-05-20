@@ -32,10 +32,26 @@ const emptyElements = [
     `wbr`,
 ];
 
+const mardkownNoteWorthyCharacters = [
+    `~`,
+    `\``,
+    `[`,
+    `]`,
+    `(`,
+    `)`,
+    `-`,
+    `*`,
+    `_`,
+    `!`,
+    `<`,
+    `>`,
+    `#`,
+    `=`,
+]
+
 
 let i = 0;
 const STATE = {
-    FREE: i++,
     TEXT: i++,
     START_RAW: i++,
     RAW_DESCRIPTION: i++,
@@ -90,12 +106,14 @@ class MarkdownParser extends Transform {
         this.items = [];
         this.listTypeOrdered = [];
         this.lastCharacter = ``;
+        this.currentString = ``;
     }
 
     _refresh() {
-        this.state = STATE.FREE;
+        this.firstCharcater = true;
+        this.indexes = [];
+        this.state = STATE.TEXT;
         this.inlineState = INLINE_STATE.REGULAR;
-        this.currentString = ``;
         this.currentInlineString = ``;
         this.linkText = ``;
         this.rawDescription = ``;
@@ -116,32 +134,77 @@ class MarkdownParser extends Transform {
         this.currentInlineString = `${this.currentInlineString}${x}`;
     }
 
-    _closeCurrent(toPush) {
-        switch (this.state) {
-            // case STATE.FREE:
-            //     toPush.push(this.currentString);
-            //     break;
-            case STATE.TEXT:
-                toPush.push(`<p>${this.currentString.trim()}</p>`);
-                this._refresh();
-                break;
-            case STATE.QUOTE:
-                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
-                this._refresh();
-                break;
-            case STATE.DELETED:
-                // remove last ~
-                this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                const currentString = (`<del>${this.currentString}</del>`);
-                this._refresh();
-                this.currentString = currentString;
-                break;
-            case STATE.TITLE_TEXT:
-                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
-                this._refresh();
-                this.state = STATE.FREE;
-                break;
-            case STATE.CLOSING_RAW: {
+    _closeInlineStuff(raw = this.currentString, start = 0, end = this.indexes.length) {
+        if (!this.indexes.length) {
+            return raw;
+        }
+        let htmlOutput = `${raw.substring(0, this.indexes[start]?.i || raw.length)}`;
+        let absorbedIndex = 0;
+        let lastUsed = this.indexes[start]?.i || 0;
+        let j;
+        const nextCharacter = () => {
+            return this.indexes[j+1]?.c;
+        }
+        const nextIndex = () => {
+            return this.indexes[j+1]?.i;
+        }
+        const findClosingPair = (after, targetC) => {
+            let result;
+            let firstFound = false;
+            for (let k = after; k < end; k+= 1) {
+                const {i, c} = this.indexes[k];
+                if (c === targetC) {
+                    if (!firstFound) {
+                        firstFound = true;
+                        result = k;
+                    } else {
+                        return result;
+                    }
+                } else {
+                    firstFound = false;
+                }
+            }
+                
+        }
+
+        for (j = start; j < end; j+= 1) {
+            const {i, c, u} = this.indexes[j];
+            if (u) {
+                continue;
+            } else {
+                this.indexes[j].u = true;
+            }
+            if (c === `~`) {
+                if (nextCharacter() === `~` && nextIndex() === i+1) {
+                    // DELETED
+                    // todo do not search inside raw stuff
+                    const closingPairIndex = findClosingPair(j+2, `~`);
+                    if (closingPairIndex === undefined) {
+                        // does not have a closing pair
+                        j += 1;
+                        
+                    } else {
+                        this.indexes[j+1].u = true;
+                        this.indexes[closingPairIndex].u = true;
+                        this.indexes[closingPairIndex+1].u = true;
+                        htmlOutput = `${htmlOutput}<del>${
+                            this._closeInlineStuff(
+                                raw.substring(nextIndex()+1, this.indexes[closingPairIndex].i),
+                                j+2,
+                                closingPairIndex,
+                            )}</del>`;
+                        j = closingPairIndex + 1;
+                        lastUsed = this.indexes[closingPairIndex].i+2
+                    }
+
+                } else {
+
+                }
+            } else if (false) {
+            
+            } else if (false) {
+                
+                STATE.CLOSING_RAW
                 let classText = ``;
                 if (this.rawDescription) {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
@@ -161,7 +224,7 @@ class MarkdownParser extends Transform {
                     }
                     
                     toPush.push(currentInlineString);
-                    this.state = STATE.FREE;
+                    this.state = STATE.TEXT;
                 } else {
                     currentInlineString = `<code${classText}>${escapeHtml(this.currentInlineString)}</code>`;
                     if (this.inside.length) {
@@ -169,15 +232,183 @@ class MarkdownParser extends Transform {
                         this.state = this.inside.pop();
                     } else {
                         toPush.push(currentInlineString);
-                        this.state = STATE.FREE;
+                        this.state = STATE.TEXT;
                     }
                 }
                 this.currentInlineString = ``;
                 this.rawDescription = ``;
                 this.closingBackTicks = 0;
 
+        
+
+            INLINE_STATE.AFTER_LINK_TEXT
+                if (c === `(`) {
+                    this.inlineState = INLINE_STATE.LINK_TARGET;
+                    this.linkText = this.currentString;
+                } else {
+                    // not a link just regular text inside []
+                    this._selfInlineBuffer(c);
+                    this._selfBuffer(`[${this.currentString}`);
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    // we already poped before
+                }
+                this.currentString = ``;
                 break;
-            } case STATE.LIST_ITEM_TEXT:
+            INLINE_STATE.AFTER_IMAGE_ALT
+                if (c === `(`) {
+                    this.inlineState = INLINE_STATE.IMAGE_SOURCE;
+                    this.linkText = this.currentString;
+                } else {
+                    // not an image just regular text inside []
+                    this._selfInlineBuffer(c);
+                    this._selfBuffer(`![${this.currentString}`);
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    // we already poped before
+                }
+                this.currentString = ``;
+                break;
+             INLINE_STATE.EM
+                if (c === `*`) {
+                    if (!this.currentInlineString) {
+                        this.inlineState = INLINE_STATE.STRONG;
+                    } else {
+                        this.inlineState = INLINE_STATE.REGULAR;
+                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
+                        this.currentInlineString = ``;
+                    }
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
+             INLINE_STATE.EM_ALT
+                if (c === `_`) {
+                    if (!this.currentInlineString) {
+                        this.inlineState = INLINE_STATE.STRONG_ALT;
+                    } else {
+                        this.inlineState = INLINE_STATE.REGULAR;
+                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
+                        this.currentInlineString = ``;
+                    }
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            INLINE_STATE.STRONG
+                if (c === `*` && this.lastCharacter === `*`) {
+                    this.inlineState = INLINE_STATE.REGULAR;
+
+                    // remove previous *
+                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
+                    this.currentInlineString = ``;
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            INLINE_STATE.STRONG_ALT
+                if (c === `_` && this.lastCharacter === `_`) {
+                    this.inlineState = INLINE_STATE.REGULAR;
+
+                    // remove previous *
+                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
+                    this.currentInlineString = ``;
+                } else {
+                    c = this._escapeHtml(c);
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            INLINE_STATE.LINK_TARGET
+                if (c === `)`) {
+                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
+                    this.currentString = `${this.currentStringBefore}<a href="${this.linkHrefHook(this.currentInlineString)}">${this.linkText}</a>`;
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    this.currentInlineString = ``;
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            INLINE_STATE.IMAGE_SOURCE
+                if (c === `)`) {
+                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
+                    if (this.mediaHook) {
+                        this.currentString = this.mediaHook(this.currentInlineString, this.linkText);
+                    } else {
+                        this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
+                    }
+                    this.inlineState = INLINE_STATE.REGULAR;
+                    this.currentInlineString = ``;
+                } else {
+                    this._selfInlineBuffer(c);
+                }
+                break;
+            
+                if (c === `\``) {
+                    this.inside.push(this.state);
+
+                    this.state = STATE.START_RAW;
+                    this.backTicks = 1;
+                } else if (c === `[`) {
+                    this.inside.push(this.state);
+                    if (this.lastCharacter === `!`) {
+                        // remove previous !
+                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                        this.state = STATE.IMAGE_ALT;
+                    } else {
+                        if (this.state === STATE.TEXT) {
+                            this.inside.push(STATE.TEXT);
+                        }
+                        this.state = STATE.LINK_TEXT;
+                        this.currentStringBefore = this.currentString;
+                        this.currentString = ``;
+                    }
+                } else if (c === `*` && this.lastCharacter !== ` `) {
+                    this.inlineState = INLINE_STATE.EM;
+                    if (this.state === STATE.TEXT) {
+                        this.inside.push(STATE.TEXT);
+                    }
+                } else if (c === `_`) {
+                    this.inlineState = INLINE_STATE.EM_ALT;
+                    if (this.state === STATE.TEXT) {
+                        this.inside.push(STATE.TEXT);
+                    }
+                } else if (c === `<`) {
+                    this.inside.push(this.state);
+                    this.state = STATE.POTENTIAL_HTML;
+                    this._selfBuffer(c);
+                    
+                } else if (this.state !== STATE.DELETED && c === `~` && this.lastCharacter === `~`) {
+
+                    this.inside.push(this.state);
+                    // remove previous !
+                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
+                    this.state = STATE.DELETED;
+                }
+            }
+        }        
+        return `${htmlOutput}${raw.substring(lastUsed)}`;
+        
+    }
+    _closeCurrent(toPush, i = this.currentString.length) {
+        const inlineOutput = this._closeInlineStuff(this.currentString.substr(0, i)).trim();
+        switch (this.state) {
+            case STATE.TEXT:
+                toPush.push(`<p>${inlineOutput}</p>`);
+                this._refresh();
+                break;
+            case STATE.QUOTE:
+                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
+                this._refresh();
+                break;
+            
+            case STATE.TITLE_TEXT:
+                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
+                this._refresh();
+                this.state = STATE.TEXT;
+                break;
+            
+            case STATE.LIST_ITEM_TEXT:
                 this.items.push(this.currentString);
             case STATE.LIST_ITEM_END:
 
@@ -198,161 +429,18 @@ class MarkdownParser extends Transform {
                 break;
             default:
                 return;
+            
         }
+        this.currentString = this.currentString.substr(i+1);
 
     }
 
-    _handleInline(c) {
-        switch (this.inlineState) {
-            case INLINE_STATE.AFTER_LINK_TEXT:
-                if (c === `(`) {
-                    this.inlineState = INLINE_STATE.LINK_TARGET;
-                    this.linkText = this.currentString;
-                } else {
-                    // not a link just regular text inside []
-                    this._selfInlineBuffer(c);
-                    this._selfBuffer(`[${this.currentString}`);
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    // we already poped before
-                }
-                this.currentString = ``;
-                break;
-            case INLINE_STATE.AFTER_IMAGE_ALT:
-                if (c === `(`) {
-                    this.inlineState = INLINE_STATE.IMAGE_SOURCE;
-                    this.linkText = this.currentString;
-                } else {
-                    // not an image just regular text inside []
-                    this._selfInlineBuffer(c);
-                    this._selfBuffer(`![${this.currentString}`);
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    // we already poped before
-                }
-                this.currentString = ``;
-                break;
-            case INLINE_STATE.EM:
-                if (c === `*`) {
-                    if (!this.currentInlineString) {
-                        this.inlineState = INLINE_STATE.STRONG;
-                    } else {
-                        this.inlineState = INLINE_STATE.REGULAR;
-                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
-                        this.currentInlineString = ``;
-                    }
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            case INLINE_STATE.EM_ALT:
-                if (c === `_`) {
-                    if (!this.currentInlineString) {
-                        this.inlineState = INLINE_STATE.STRONG_ALT;
-                    } else {
-                        this.inlineState = INLINE_STATE.REGULAR;
-                        this._selfBuffer(`<em>${this.currentInlineString}</em>`);
-                        this.currentInlineString = ``;
-                    }
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            case INLINE_STATE.STRONG:
-                if (c === `*` && this.lastCharacter === `*`) {
-                    this.inlineState = INLINE_STATE.REGULAR;
-
-                    // remove previous *
-                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
-                    this.currentInlineString = ``;
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            case INLINE_STATE.STRONG_ALT:
-                if (c === `_` && this.lastCharacter === `_`) {
-                    this.inlineState = INLINE_STATE.REGULAR;
-
-                    // remove previous *
-                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
-                    this.currentInlineString = ``;
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            case INLINE_STATE.LINK_TARGET:
-                if (c === `)`) {
-                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    this.currentString = `${this.currentStringBefore}<a href="${this.linkHrefHook(this.currentInlineString)}">${this.linkText}</a>`;
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    this.currentInlineString = ``;
-                } else {
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            case INLINE_STATE.IMAGE_SOURCE:
-                if (c === `)`) {
-                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    if (this.mediaHook) {
-                        this.currentString = this.mediaHook(this.currentInlineString, this.linkText);
-                    } else {
-                        this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
-                    }
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    this.currentInlineString = ``;
-                } else {
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            default:
-                if (c === `\``) {
-                    this.inside.push(this.state);
-
-                    this.state = STATE.START_RAW;
-                    this.backTicks = 1;
-                } else if (c === `[`) {
-                    this.inside.push(this.state);
-                    if (this.lastCharacter === `!`) {
-                        // remove previous !
-                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                        this.state = STATE.IMAGE_ALT;
-                    } else {
-                        if (this.state === STATE.FREE) {
-                            this.inside.push(STATE.TEXT);
-                        }
-                        this.state = STATE.LINK_TEXT;
-                        this.currentStringBefore = this.currentString;
-                        this.currentString = ``;
-                    }
-                } else if (c === `*` && this.lastCharacter !== ` `) {
-                    this.inlineState = INLINE_STATE.EM;
-                    if (this.state === STATE.FREE) {
-                        this.inside.push(STATE.TEXT);
-                    }
-                } else if (c === `_`) {
-                    this.inlineState = INLINE_STATE.EM_ALT;
-                    if (this.state === STATE.FREE) {
-                        this.inside.push(STATE.TEXT);
-                    }
-                } else if (c === `<`) {
-                    this.inside.push(this.state);
-                    this.state = STATE.POTENTIAL_HTML;
-                    this._selfBuffer(c);
-                    
-                } else if (this.state !== STATE.DELETED && c === `~` && this.lastCharacter === `~`) {
-
-                    this.inside.push(this.state);
-                    // remove previous !
-                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                    this.state = STATE.DELETED;
-                } else {
-                    return true;
-                }
+    _noteWorthyCharacters(c, i) {
+        if (mardkownNoteWorthyCharacters.includes(c)) {
+            this.indexes.push({c,i});
+            return true;
         }
-        // the continue makes it skip
-        this.lastCharacter = c;
+        return false;
     }
 
     _escapeHtml(c) {
@@ -364,8 +452,10 @@ class MarkdownParser extends Transform {
 
     _transform(buffer, encoding, done) {
         const asString = String(buffer);
+        this._selfBuffer(asString);
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
+        let finished = 0;
 
         for (let i = 0; i < length; i += 1) {
             let c = asString[i];
@@ -408,7 +498,7 @@ class MarkdownParser extends Transform {
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
                         this.state = this.inside.pop();
-                        if (this.state === STATE.FREE) {
+                        if (this.state === STATE.TEXT) {
                             this.state = STATE.TEXT;
                         }
                         // correct and escape the <
@@ -454,37 +544,14 @@ class MarkdownParser extends Transform {
                     }
                     break;
 
-                case STATE.FREE:
-                    if (!this._handleInline(c)) {
-                        continue;
-                    }
-                    if (c === `#`) {
-                        this._closeAllPrevious(toPush);
-                        this.state = STATE.START_TITLE;
-                        this.titleLevel = 1;
-                    } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
-                        this.state = STATE.LIST_ITEM_TEXT;
-                        this.listTypeOrdered.push(false);
-                    } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
-                        this.state = STATE.ORDERED_LIST_START;
-                    } else if (c === `>`) {
-                        this.state = STATE.QUOTE;
-                    } else if (isWhitespace(c)) {
-
-                    } else {
-                        c = this._escapeHtml(c);
-                        this._selfBuffer(c);
-                        this.state = STATE.TEXT;
-                    }
-                    break;
-
                 case STATE.TEXT:
-                    if (!this._handleInline(c, toPush)) {
+                    if (this._noteWorthyCharacters(c, i)) {
+                        this.firstCharcater = false;
                         continue;
                     }
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this._closeCurrent(toPush);
+                            this._closeCurrent(toPush, i);
                         } else {
                             this.newLined = true;
                         }
@@ -493,21 +560,44 @@ class MarkdownParser extends Transform {
                     } else if (c === `-` && this.newLined) {
                         this.state = STATE.UNDERTITLE2;
                     } else {
-                        c = this._escapeHtml(c);
-                        if (this.newLined) {
-                            this._selfBuffer(` `);
-                            this.newLined = false;
+                        if (this.firstCharcater) {
+                            if (c === `#`) {
+                                this._closeAllPrevious(toPush);
+                                this.state = STATE.START_TITLE;
+                                this.titleLevel = 1;
+                            } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
+                                this.state = STATE.LIST_ITEM_TEXT;
+                                this.listTypeOrdered.push(false);
+                            } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
+                                this.state = STATE.ORDERED_LIST_START;
+                            } else if (c === `>`) {
+                                this.state = STATE.QUOTE;
+                            } else if (isWhitespace(c)) {
+
+                            } else {
+                                // c = this._escapeHtml(c); // todo when closing
+                                if (this.newLined) {
+                                    // this._selfBuffer(` `);
+                                    this.newLined = false;
+                                }
+                            }
+                        } else {
+                            // c = this._escapeHtml(c); // todo when closing
+                            if (this.newLined) {
+                                // this._selfBuffer(` `); // todo
+                                this.newLined = false;
+                            }
                         }
-                        this._selfBuffer(c);
                     }
+                    this.firstCharcater = false
                     break;
                 case STATE.QUOTE:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this._closeCurrent(toPush);
+                            // this._closeCurrent(toPush);
                         } else {
                             this.newLined = true;
                         }
@@ -521,7 +611,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.LINK_TEXT:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `]`) {
@@ -533,18 +623,18 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.DELETED:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `~` && this.lastCharacter === `~`) {
-                        this._closeCurrent(toPush);
+                        // this._closeCurrent(toPush);
                     } else {
                         c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
                 case STATE.IMAGE_ALT:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `]`) {
@@ -568,7 +658,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.LIST_ITEM_TEXT:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         this.firstVisibleCharacterPassed = true;
                         continue;
                     }
@@ -594,11 +684,11 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.TITLE_TEXT:
-                    if (!this._handleInline(c, toPush)) {
+                    if (!this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `\n`) {
-                        this._closeCurrent(toPush);
+                        // this._closeCurrent(toPush);
                     } else {
                         c = this._escapeHtml(c);
                         this._selfBuffer(c);
@@ -606,7 +696,7 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
-                        this._closeCurrent(toPush);
+                        // this._closeCurrent(toPush);
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_TEXT;
@@ -684,7 +774,6 @@ class MarkdownParser extends Transform {
                     done(`Invalid state`);
                     return;
             }
-            this.lastCharacter = c;
         }
 
         if (toPush.length) {

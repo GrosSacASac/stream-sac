@@ -12,8 +12,7 @@ like `_` seen at position 4 and 12 and when the paragraph is over we try to gene
 
 Why this change ?
 
-Previously  when for example a  `_` is found but not the closing one, we had to rollback what was already pushed on a stack. This is error prone as we have to restore the `_` character as well as handling every opening and closing markdown parsing. And detecting links would be complicated since links can contain `_`.
-
+Previously  when for example a  `_` is found but not the closing one, we had to rollback what was already pushed on a stack. This is error prone as we have to restore the `_` character as well as handling every other opening and closing markdown character. And detecting links would be complicated since links can contain `_`. Also the code to handle underlined inside deleted inside bold was not possible without the recursive function calls that are used now.
 
 
 
