@@ -237,6 +237,7 @@ class MarkdownParser extends Transform {
                         if (openingBracket !== undefined && this.indexes[openingBracket].i === closingPosition + 1) {
                             const closingBracket = findClosingSimple(openingBracket+1, `]`);
                             if (closingBracket !== undefined) {
+                                // reference link
                                 this.indexes[closingIndex].u = true;
                                 const slug = slugify(raw.substring(this.indexes[openingBracket].i+1, this.indexes[closingBracket].i));
                                 htmlOutput = `${htmlOutput}<a href="#${slug}">${
@@ -249,13 +250,10 @@ class MarkdownParser extends Transform {
                                 lastUsed = this.indexes[closingBracket].i+1
                             }
                         } else {
+                            // reference from a previous link
                             const colon = findClosingSimple(closingIndex+1, `:`);
                             if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
-                                console.log(i+1, closingPosition)
-                                console.log(raw)
-                                console.log(raw.substring(i+1, closingPosition))
                                 const slug = slugify(raw.substring(i+1, closingPosition));
-                                console.log(256,slug)
                                 htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
                                     raw.substring(this.indexes[colon].i+1, raw.length).trim()
                                 )}">${
@@ -264,6 +262,15 @@ class MarkdownParser extends Transform {
                                 j = end;
                                 lastUsed = raw.length
                                 break;
+                            } else {
+                                // reference link with only text
+                                this.indexes[closingIndex].u = true;
+                                const slug = slugify(raw.substring(i+1, closingPosition));
+                                htmlOutput = `${htmlOutput}<a href="#${slug}">${
+                                    raw.substring(i+1, closingPosition)
+                                }</a>`;
+                                j = closingIndex;
+                                lastUsed = closingPosition+1
                             }
                         }
                     }
