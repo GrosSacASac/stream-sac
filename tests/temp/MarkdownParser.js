@@ -2,7 +2,7 @@ import test from "ava";
 import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
 import { finished } from "stream/promises";
-
+//todo change order (block then inline)
 
 
 test(`MarkdownParser is a function`, t => {
@@ -10,6 +10,19 @@ test(`MarkdownParser is a function`, t => {
 });
 
 test(`paragraph`, async t => {
+    const markdownParser = new MarkdownParser();
+    const t1 = `blablabla`
+    concatAsStream([`${t1}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>${t1}</p>`));
+});
+
+test(`paragraphs`, async t => {
     const markdownParser = new MarkdownParser();
     const t1 = `blablabla`
     const t2 = `zzzzzzzzzzz`
@@ -406,6 +419,7 @@ test(`strong alternative syntax`, async t => {
     t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
 });
 
+
 test(`deleted`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `removed !`
@@ -418,6 +432,47 @@ test(`deleted`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p><del>${x}</del></p>`));
 });
+
+
+test(`2 deleted`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}~~~~${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><del>${x}</del><del>${x}</del></p>`));
+});
+
+test(`deleted without closing`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>~~${x}</p>`));
+});
+
+test(`closing deleted without start`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>${x}~~</p>`));
+});
+
 
 test(`emphasis`, async t => {
     const markdownParser = new MarkdownParser();
