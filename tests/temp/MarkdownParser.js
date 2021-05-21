@@ -195,8 +195,8 @@ test(`reference link with only text`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
-    // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
+    t.is(forceBuffer, (`<p><a href="#${slugify(linkText)}">${linkText}</a></p><p><a id="${slugify(linkText)}" href="${linkTarget}">${linkText}</a></p>`));
+    // t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
 });
 
 
@@ -668,3 +668,19 @@ test(`it should not mix elements`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<h1>a</h1><img src="b" alt="c"><p><em>d</em></p><h2>e</h2>`));
 });
+
+test(`link inside emphasis alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    const linkTarget = `https://example.com/`
+    const linkText = `example`
+    concatAsStream([`_${x}[${linkText}](${linkTarget})_`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}<a href="${linkTarget}">${linkText}</a></em></p>`));
+});
+
