@@ -3,6 +3,8 @@ export { MarkdownParser };
 import { Transform } from "stream";
 import { isWhitespaceCharacter as isWhitespace } from "is-whitespace-character";
 import {escape as escapeHtml} from 'html-escaper';
+import slugify from "@sindresorhus/slugify";
+
 
 const isAsciiLetter = (c) => {
     const ch = c.charCodeAt(0);
@@ -47,6 +49,7 @@ const mardkownNoteWorthyCharacters = [
     `>`,
     `#`,
     `=`,
+    `:`,
 ]
 
 
@@ -104,6 +107,7 @@ class MarkdownParser extends Transform {
         this.listTypeOrdered = [];
         this.lastCharacter = ``;
         this.currentString = ``;
+        this.iAdjust = 0;
     }
 
     _refresh() {
@@ -216,8 +220,6 @@ class MarkdownParser extends Transform {
                     if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
                         const closingParenthese = findClosingSimple(openingParenthese+1, `)`);
                         if (closingParenthese !== undefined) {
-
-                            
                             this.indexes[closingIndex].u = true;
                             htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
                                 raw.substring(this.indexes[openingParenthese].i+1, this.indexes[closingParenthese].i)
@@ -231,7 +233,39 @@ class MarkdownParser extends Transform {
                             lastUsed = this.indexes[closingParenthese].i+1
                         }
                     } else {
-                        // todo just []
+                        const openingBracket = findClosingSimple(closingIndex+1, `[`);
+                        if (openingBracket !== undefined && this.indexes[openingBracket].i === closingPosition + 1) {
+                            const closingBracket = findClosingSimple(openingBracket+1, `]`);
+                            if (closingBracket !== undefined) {
+                                this.indexes[closingIndex].u = true;
+                                const slug = slugify(raw.substring(this.indexes[openingBracket].i+1, this.indexes[closingBracket].i));
+                                htmlOutput = `${htmlOutput}<a href="#${slug}">${
+                                    this._closeInlineStuff(
+                                        raw.substring(i+1, this.indexes[closingIndex].i),
+                                        j+1,
+                                        closingIndex,
+                                )}</a>`;
+                                j = closingBracket;
+                                lastUsed = this.indexes[closingBracket].i+1
+                            }
+                        } else {
+                            const colon = findClosingSimple(closingIndex+1, `:`);
+                            if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
+                                console.log(i+1, closingPosition)
+                                console.log(raw)
+                                console.log(raw.substring(i+1, closingPosition))
+                                const slug = slugify(raw.substring(i+1, closingPosition));
+                                console.log(256,slug)
+                                htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
+                                    raw.substring(this.indexes[colon].i+1, raw.length).trim()
+                                )}">${
+                                    raw.substring(i+1, closingPosition)
+                                }</a>`;
+                                j = end;
+                                lastUsed = raw.length
+                                break;
+                            }
+                        }
                     }
 
 
@@ -443,6 +477,7 @@ class MarkdownParser extends Transform {
                 return;
             
         }
+        this.iAdjust = i+1;
         this.currentString = this.currentString.substr(i+1);
 
     }
@@ -557,7 +592,7 @@ class MarkdownParser extends Transform {
                     break;
 
                 case STATE.TEXT:
-                    if (this._noteWorthyCharacters(c, i)) {
+                    if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
                         this.firstCharcater = false;
                         continue;
                     }

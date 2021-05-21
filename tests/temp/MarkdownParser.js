@@ -168,7 +168,7 @@ test(`reference link`, async t => {
     const linkTarget = `https://example.com/`
     const linkText = `example` 
     const linkRef = `example and you` 
-    const linkRefUppercase = linkText.toUpperCase();
+    const linkRefUppercase = linkRef.toUpperCase();
     concatAsStream([`[${linkText}][${linkRef}]
 
 [${linkRefUppercase}]: ${linkTarget}`]).pipe(markdownParser);
@@ -178,8 +178,8 @@ test(`reference link`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
-    // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
+    t.is(forceBuffer, (`<p><a href="#${slugify(linkRef)}">${linkText}</a></p><p><a id="${slugify(linkRef)}" href="${linkTarget}">${linkRefUppercase}</a></p>`));
+    // t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
 });
 
 test(`reference link with only text`, async t => {
@@ -198,7 +198,6 @@ test(`reference link with only text`, async t => {
     t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
     // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
-
 
 
 test(`auto detect link`, async t => {
