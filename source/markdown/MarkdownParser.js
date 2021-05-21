@@ -321,6 +321,15 @@ class MarkdownParser extends Transform {
                         lastUsed = this.indexes[nextStar].i+1;
                     } 
                 }
+            } else if (c === `\``) {
+                const nextBackTick = findClosingSimple(j+1, `\``);
+                if (nextBackTick) {
+                    this.indexes[nextBackTick].u = true;
+                    htmlOutput = `${htmlOutput}<code>${
+                        this.currentString.substring(i+1,this.indexes[nextBackTick].i)}</code>`;
+                    j = nextBackTick + 1;
+                    lastUsed = this.indexes[nextBackTick].i+1;
+                } 
             } else if (false) {
                 
                 STATE.CLOSING_RAW
