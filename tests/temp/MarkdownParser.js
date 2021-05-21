@@ -2,6 +2,7 @@ import test from "ava";
 import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
 import { finished } from "stream/promises";
+import slugify from "@sindresorhus/slugify";
 //todo change order (block then inline)
 
 
