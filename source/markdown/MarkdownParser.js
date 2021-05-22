@@ -67,18 +67,11 @@ const STATE = {
     ORDERED_LIST_START: i++,
     LIST_ITEM_TEXT: i++,
     LIST_ITEM_END: i++,
-    DELETED: i++,
     QUOTE: i++,
     HORIZONTAL_RULE: i++,
     POTENTIAL_HTML: i++,
     INISIDE_HTML: i++,
 };
-
-const INLINE_STATE = {
-    REGULAR: i++,
-    STRONG: i++,
-    STRONG_ALT: i++,
-}
 
 
 const identity = (x) => {
@@ -100,7 +93,6 @@ class MarkdownParser extends Transform {
         this.inside = [];
         this.items = [];
         this.listTypeOrdered = [];
-        this.lastCharacter = ``;
         this.currentString = ``;
         this.iAdjust = 0;
     }
@@ -109,8 +101,6 @@ class MarkdownParser extends Transform {
         this.firstCharcater = true;
         this.indexes = [];
         this.state = STATE.TEXT;
-        this.inlineState = INLINE_STATE.REGULAR;
-        this.currentInlineString = ``;
         this.linkText = ``;
         this.rawDescription = ``;
         this._currentTagName = ``;
@@ -119,15 +109,10 @@ class MarkdownParser extends Transform {
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
         this.newLined = false;
-        this.inlineState = undefined;
     }
 
     _selfBuffer(x) {
         this.currentString = `${this.currentString}${x}`;
-    }
-
-    _selfInlineBuffer(x) {
-        this.currentInlineString = `${this.currentInlineString}${x}`;
     }
 
     _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = this.indexes.length) {
@@ -432,38 +417,6 @@ class MarkdownParser extends Transform {
                 this.currentInlineString = ``;
                 this.rawDescription = ``;
                 this.closingBackTicks = 0;
-            INLINE_STATE.STRONG
-                if (c === `*` && this.lastCharacter === `*`) {
-                    this.inlineState = INLINE_STATE.REGULAR;
-
-                    // remove previous *
-                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
-                    this.currentInlineString = ``;
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            INLINE_STATE.STRONG_ALT
-                if (c === `_` && this.lastCharacter === `_`) {
-                    this.inlineState = INLINE_STATE.REGULAR;
-
-                    // remove previous *
-                    this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
-                    this.currentInlineString = ``;
-                                
-                } else if (c === `<`) {
-                    this.inside.push(this.state);
-                    this.state = STATE.POTENTIAL_HTML;
-                    this._selfBuffer(c);
-                    
-                } else if (this.state !== STATE.DELETED && c === `~` && this.lastCharacter === `~`) {
-
-                    this.inside.push(this.state);
-                    // remove previous !
-                    this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                    this.state = STATE.DELETED;
-                }
             }
         }        
         return `${htmlOutput}${escapeHtml(this.currentString.substring(lastUsed, currentStringEnd))}`;
@@ -687,17 +640,6 @@ class MarkdownParser extends Transform {
                             this._selfBuffer(` `);
                             this.newLined = false;
                         }
-                        this._selfBuffer(c);
-                    }
-                    break;
-                case STATE.DELETED:
-                    if (!this._noteWorthyCharacters(c, toPush)) {
-                        continue;
-                    }
-                    if (c === `~` && this.lastCharacter === `~`) {
-                        // this._closeCurrent(toPush);
-                    } else {
-                        c = this._escapeHtml(c);
                         this._selfBuffer(c);
                     }
                     break;
