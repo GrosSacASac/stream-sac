@@ -388,7 +388,6 @@ test(`image`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p><img alt="${altText}" src="${source}"></p>`));
 });
 

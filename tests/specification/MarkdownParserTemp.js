@@ -171,3 +171,17 @@ test(`raw in the middle of a paragraph`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>Want to make text look big ? Think about the reason first, maybe it is a title and <code>&lt;h1-6&gt;</code> should be used.</p>`));
 });
+
+test(`image`, async t => {
+    const markdownParser = new MarkdownParser();
+    const altText = `drinking face`
+    const source = `../images/about.jpg`
+    concatAsStream([`![${altText}](${source})`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><img alt="${altText}" src="${source}"></p>`));
+});

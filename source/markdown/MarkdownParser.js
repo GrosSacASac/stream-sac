@@ -67,7 +67,6 @@ const STATE = {
     ORDERED_LIST_START: i++,
     LIST_ITEM_TEXT: i++,
     LIST_ITEM_END: i++,
-    IMAGE_ALT: i++,
     DELETED: i++,
     QUOTE: i++,
     HORIZONTAL_RULE: i++,
@@ -77,9 +76,6 @@ const STATE = {
 
 const INLINE_STATE = {
     REGULAR: i++,
-    AFTER_IMAGE_ALT: i++,
-    IMAGE_SOURCE: i++,
-    EM_ALT: i++,
     STRONG: i++,
     STRONG_ALT: i++,
 }
@@ -223,6 +219,7 @@ class MarkdownParser extends Transform {
                     if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
                         const closingParenthese = findClosingSimple(openingParenthese+1, `)`);
                         if (closingParenthese !== undefined) {
+                            // regular link
                             this.indexes[closingIndex].u = true;
                             htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
                                 this.currentString.substring(this.indexes[openingParenthese].i+1, this.indexes[closingParenthese].i)
@@ -284,6 +281,39 @@ class MarkdownParser extends Transform {
                 } else {
 
                 }
+            } else if (c === `!`) {
+                const openingBracketIndex = findClosingSimple(j+1, `[`);
+                if (openingBracketIndex) {
+                    const closingIndex = findClosingSimple(openingBracketIndex+1, `]`);
+                    if (closingIndex !== undefined) {
+                        const closingPosition = this.indexes[closingIndex].i;
+                        const openingParenthese = findClosingSimple(closingIndex+1, `(`);
+                        if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
+                            const closingParenthese = findClosingSimple(openingParenthese+1, `)`);
+                            if (closingParenthese !== undefined) {
+                                // regular image
+                                this.indexes[closingIndex].u = true;
+                                const src = this.currentString.substring(this.indexes[openingParenthese].i+1, this.indexes[closingParenthese].i);
+                                const alt = this._closeInlineStuff(
+                                    this.indexes[openingBracketIndex].i+1,
+                                    this.indexes[closingIndex].i,
+                                    j+2,
+                                    closingIndex,
+                                );
+                                let output;
+                                if (this.mediaHook) {
+                                    output = this.mediaHook(src, alt);
+                                } else {
+                                    output = `<img alt="${alt}" src="${src}">`;
+                                }
+                                htmlOutput = `${htmlOutput}${output}`;
+                                j = closingParenthese;
+                                lastUsed = this.indexes[closingParenthese].i+1
+                            }
+                        }
+                    }
+                }
+                
             } else if (c === `*`) {
                 if (nextCharacter() === `*` && nextIndex() === i + 1) {
                     // strong
@@ -333,7 +363,7 @@ class MarkdownParser extends Transform {
                     lastUsed = this.indexes[nextBackTick].i+1;
                 } 
             } else if (false) {
-                
+            
                 STATE.CLOSING_RAW
                 let classText = ``;
                 if (this.rawDescription) {
@@ -368,21 +398,6 @@ class MarkdownParser extends Transform {
                 this.currentInlineString = ``;
                 this.rawDescription = ``;
                 this.closingBackTicks = 0;
-
-        
-            INLINE_STATE.AFTER_IMAGE_ALT
-                if (c === `(`) {
-                    this.inlineState = INLINE_STATE.IMAGE_SOURCE;
-                    this.linkText = this.currentString;
-                } else {
-                    // not an image just regular text inside []
-                    this._selfInlineBuffer(c);
-                    this._selfBuffer(`![${this.currentString}`);
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    // we already poped before
-                }
-                this.currentString = ``;
-                break;
             INLINE_STATE.STRONG
                 if (c === `*` && this.lastCharacter === `*`) {
                     this.inlineState = INLINE_STATE.REGULAR;
@@ -402,45 +417,7 @@ class MarkdownParser extends Transform {
                     // remove previous *
                     this._selfBuffer(`<strong>${this.currentInlineString.substring(0, this.currentInlineString.length - 1)}</strong>`);
                     this.currentInlineString = ``;
-                } else {
-                    c = this._escapeHtml(c);
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            INLINE_STATE.IMAGE_SOURCE
-                if (c === `)`) {
-                    // this._closeCurrent(toPush); // cannot close current since it is an inline state
-                    if (this.mediaHook) {
-                        this.currentString = this.mediaHook(this.currentInlineString, this.linkText);
-                    } else {
-                        this.currentString = `<img alt="${this.linkText}" src="${this.currentInlineString}">`;
-                    }
-                    this.inlineState = INLINE_STATE.REGULAR;
-                    this.currentInlineString = ``;
-                } else {
-                    this._selfInlineBuffer(c);
-                }
-                break;
-            
-                if (c === `\``) {
-                    this.inside.push(this.state);
-
-                    this.state = STATE.START_RAW;
-                    this.backTicks = 1;
-                } else if (c === `[`) {
-                    this.inside.push(this.state);
-                    if (this.lastCharacter === `!`) {
-                        // remove previous !
-                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
-                        this.state = STATE.IMAGE_ALT;
-                    } else {
-                        if (this.state === STATE.TEXT) {
-                            this.inside.push(STATE.TEXT);
-                        }
-                        this.state = STATE.LINK_TEXT;
-                        this.currentStringBefore = this.currentString;
-                        this.currentString = ``;
-                    }
+                                
                 } else if (c === `<`) {
                     this.inside.push(this.state);
                     this.state = STATE.POTENTIAL_HTML;
@@ -685,18 +662,6 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `~` && this.lastCharacter === `~`) {
                         // this._closeCurrent(toPush);
-                    } else {
-                        c = this._escapeHtml(c);
-                        this._selfBuffer(c);
-                    }
-                    break;
-                case STATE.IMAGE_ALT:
-                    if (!this._noteWorthyCharacters(c, toPush)) {
-                        continue;
-                    }
-                    if (c === `]`) {
-                        this.state = this.inside.pop() || STATE.FREE;
-                        this.inlineState = INLINE_STATE.AFTER_IMAGE_ALT;
                     } else {
                         c = this._escapeHtml(c);
                         this._selfBuffer(c);
