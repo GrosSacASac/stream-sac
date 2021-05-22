@@ -118,32 +118,6 @@ test(`raw inline`, async t => {
     t.is(forceBuffer, (`<p><code>${text}</code></p>`));
 });
 
-test(`emphasis`, async t => {
-    const markdownParser = new MarkdownParser();
-    const x = `notice me`
-    concatAsStream([`*${x}*`]).pipe(markdownParser);
-
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
-        forceBuffer = `${forceBuffer}${x}`;
-    });
-    await finished(markdownParser);
-    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
-});
-
-test(`emphasis alternative syntax`, async t => {
-    const markdownParser = new MarkdownParser();
-    const x = `notice me`
-    concatAsStream([`_${x}_`]).pipe(markdownParser);
-
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
-        forceBuffer = `${forceBuffer}${x}`;
-    });
-    await finished(markdownParser);
-    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
-});
-
 test(`link inside emphasis alternative syntax`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `notice me`
@@ -184,4 +158,113 @@ test(`image`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p><img alt="${altText}" src="${source}"></p>`));
+});
+
+
+test(`strong`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `important !`
+    concatAsStream([`**${x}**`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+});
+
+
+test(`strong alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `important !`
+    concatAsStream([`__${x}__`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><strong>${x}</strong></p>`));
+});
+
+
+test(`deleted`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><del>${x}</del></p>`));
+});
+
+
+test(`2 deleted`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}~~~~${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><del>${x}</del><del>${x}</del></p>`));
+});
+
+test(`deleted without closing`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`~~${x}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>~~${x}</p>`));
+});
+
+test(`closing deleted without start`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `removed !`
+    concatAsStream([`${x}~~`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>${x}~~</p>`));
+});
+
+
+test(`emphasis`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    concatAsStream([`*${x}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
+});
+
+test(`emphasis alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    concatAsStream([`_${x}_`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });

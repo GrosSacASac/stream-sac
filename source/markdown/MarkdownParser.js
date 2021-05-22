@@ -317,6 +317,23 @@ class MarkdownParser extends Transform {
             } else if (c === `*`) {
                 if (nextCharacter() === `*` && nextIndex() === i + 1) {
                     // strong
+                    const closingPairIndex = findClosingPair(j+2, `*`);
+                    if (closingPairIndex) {
+                        this.indexes[j+1].u = true;
+                        this.indexes[closingPairIndex].u = true;
+                        this.indexes[closingPairIndex+1].u = true;
+                        htmlOutput = `${htmlOutput}<strong>${
+                            this._closeInlineStuff(
+                                nextIndex()+1,
+                                this.indexes[closingPairIndex].i,
+                                j+2,
+                                closingPairIndex,
+                            )}</strong>`;
+                        j = closingPairIndex + 1;
+                        lastUsed = this.indexes[closingPairIndex].i+2
+                    } else {
+                        j += 1;
+                    }
                 } else {
                     const nextStar = findClosingSimple(j+1, `*`);
                     if (nextStar) {
@@ -336,6 +353,23 @@ class MarkdownParser extends Transform {
                 // todo deduplicate with above
                 if (nextCharacter() === `_` && nextIndex() === i + 1) {
                     // strong
+                    const closingPairIndex = findClosingPair(j+2, `_`);
+                    if (closingPairIndex) {
+                        this.indexes[j+1].u = true;
+                        this.indexes[closingPairIndex].u = true;
+                        this.indexes[closingPairIndex+1].u = true;
+                        htmlOutput = `${htmlOutput}<strong>${
+                            this._closeInlineStuff(
+                                nextIndex()+1,
+                                this.indexes[closingPairIndex].i,
+                                j+2,
+                                closingPairIndex,
+                            )}</strong>`;
+                        j = closingPairIndex + 1;
+                        lastUsed = this.indexes[closingPairIndex].i+2
+                    } else {
+                        j += 1;
+                    }
                 } else {
                     const nextStar = findClosingSimple(j+1, `_`);
                     if (nextStar) {
