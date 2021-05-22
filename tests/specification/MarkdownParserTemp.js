@@ -160,3 +160,14 @@ test(`link inside emphasis alternative syntax`, async t => {
 });
 
 
+test(`raw in the middle of a paragraph`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`Want to make text look big ? Think about the reason first, maybe it is a title and \`<h1-6>\` should be used.`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>Want to make text look big ? Think about the reason first, maybe it is a title and <code>&lt;h1-6&gt;</code> should be used.</p>`));
+});

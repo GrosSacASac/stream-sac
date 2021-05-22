@@ -141,7 +141,7 @@ class MarkdownParser extends Transform {
         }
         let htmlOutput = ``;
         if (this.indexes[start]?.i !== 0) {
-            htmlOutput = `${this.currentString.substring(currentStringStart, this.indexes[start]?.i || currentStringEnd)}`;
+            htmlOutput = `${escapeHtml(this.currentString.substring(currentStringStart, this.indexes[start]?.i || currentStringEnd))}`;
         }
         let absorbedIndex = 0;
         let lastUsed = this.indexes[start]?.i || 0;
@@ -324,9 +324,11 @@ class MarkdownParser extends Transform {
             } else if (c === `\``) {
                 const nextBackTick = findClosingSimple(j+1, `\``);
                 if (nextBackTick) {
+                    //raw
                     this.indexes[nextBackTick].u = true;
                     htmlOutput = `${htmlOutput}<code>${
-                        this.currentString.substring(i+1,this.indexes[nextBackTick].i)}</code>`;
+                        escapeHtml(this.currentString.substring(i+1,this.indexes[nextBackTick].i))
+                    }</code>`;
                     j = nextBackTick + 1;
                     lastUsed = this.indexes[nextBackTick].i+1;
                 } 
@@ -453,7 +455,7 @@ class MarkdownParser extends Transform {
                 }
             }
         }        
-        return `${htmlOutput}${this.currentString.substring(lastUsed, currentStringEnd)}`;
+        return `${htmlOutput}${escapeHtml(this.currentString.substring(lastUsed, currentStringEnd))}`;
         
     }
     _closeCurrent(toPush, i = this.currentString.length) {
