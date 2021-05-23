@@ -422,6 +422,7 @@ class MarkdownParser extends Transform {
         return `${htmlOutput}${escapeHtml(this.currentString.substring(lastUsed, currentStringEnd))}`;
         
     }
+
     _closeCurrent(toPush, i = this.currentString.length) {
         const inlineOutput = this._closeInlineStuff(0, i).trim();
         switch (this.state) {
@@ -578,10 +579,7 @@ class MarkdownParser extends Transform {
                     break;
 
                 case STATE.TEXT:
-                    if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
-                        this.firstCharcater = false;
-                        continue;
-                    }
+                    
                     if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush, i);
@@ -598,10 +596,10 @@ class MarkdownParser extends Transform {
                                 this._closeAllPrevious(toPush);
                                 this.state = STATE.START_TITLE;
                                 this.titleLevel = 1;
-                            } else if ((c === `*` || c === `-`) && (isWhitespace(this.lastCharacter))) {
+                            } else if (c === `*` || c === `-`) {
                                 this.state = STATE.LIST_ITEM_TEXT;
                                 this.listTypeOrdered.push(false);
-                            } else if ((c === `0` || c === `1`) && (isWhitespace(this.lastCharacter))) {
+                            } else if (c === `0` || c === `1`) {
                                 this.state = STATE.ORDERED_LIST_START;
                             } else if (c === `>`) {
                                 this.state = STATE.QUOTE;
@@ -613,6 +611,10 @@ class MarkdownParser extends Transform {
                                     // this._selfBuffer(` `);
                                     this.newLined = false;
                                 }
+                                if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
+                                    this.firstCharcater = false;
+                                    continue;
+                                }
                             }
                         } else {
                             // c = this._escapeHtml(c); // todo when closing
@@ -620,9 +622,15 @@ class MarkdownParser extends Transform {
                                 // this._selfBuffer(` `); // todo
                                 this.newLined = false;
                             }
+                            if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
+                                this.firstCharcater = false;
+                                continue;
+                            }
                         }
                     }
-                    this.firstCharcater = false
+                    if(c !== ` `) {
+                        this.firstCharcater = false
+                    }
                     break;
                 case STATE.QUOTE:
                     if (!this._noteWorthyCharacters(c, toPush)) {
