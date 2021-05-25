@@ -506,7 +506,7 @@ class MarkdownParser extends Transform {
                     if (this.closingBackTicks > this.backTicks) {
                         this._selfInlineBuffer(`\``.repeat(this.closingBackTicks - this.backTicks));
                     }
-                    this._closeCurrent(toPush);
+                    // this._closeCurrent(toPush);
                 }
             }
             switch (this.state) {
@@ -514,14 +514,14 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         this.titleLevel = 1
                         this.state = STATE.TITLE_TEXT;
-                        this._closeCurrent(toPush);
+                        // this._closeCurrent(toPush);
                     }
                     break;
                 case STATE.UNDERTITLE2:
                         if (c === `\n`) {
                         this.titleLevel = 2
                         this.state = STATE.TITLE_TEXT;
-                        this._closeCurrent(toPush);
+                        // this._closeCurrent(toPush);
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
@@ -600,9 +600,9 @@ class MarkdownParser extends Transform {
                             } else if (c === `*` || c === `-`) {
                                 this.state = STATE.LIST_ITEM_START;
                                 this.lastCharacter = c;
-                                this.listTypeOrdered.push(false);
                             } else if (c === `0` || c === `1`) {
                                 this.state = STATE.ORDERED_LIST_START;
+                                this.lastCharacter = c;
                             } else if (c === `>`) {
                                 this.state = STATE.QUOTE;
                             } else if (isWhitespace(c)) {
@@ -654,19 +654,34 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.ORDERED_LIST_START:
-                    if (c === `.`) {
-                        this.state = STATE.LIST_ITEM_TEXT;
-                        this.listTypeOrdered.push(true);
-                    } else {
-                        c = this._escapeHtml(c);
-                        // it was not a start of an ordered list after all
-                        this.state = STATE.TEXT;
-                        this._selfBuffer(this.lastCharacter);
-                        this._selfBuffer(c);
+                    if (Number.isFinite(Number(this.lastCharacter))) {
+                        if (c === `.`) {
+                            this.lastCharacter = c;
+                        } else {
+                            // force go loop to go again with current character
+                            i -= 1;
+                            this.state = STATE.TEXT;
+                        }
+                    } else if (this.lastCharacter === `.`) {
+                        if (c === ` `) {
+                            this.listTypeOrdered.push(true);
+                            this.state = STATE.LIST_ITEM_TEXT;
+                            this.iAdjust = i;
+                            if (!this.items.length) {
+                                this.currentString = this.currentString.substr(3);
+                            } else {
+                                this.currentString = this.currentString.substr(2);
+                            }
+                        } else {
+                            // force go loop to go again with current character
+                            i -= 2;
+                            this.state = STATE.TEXT;
+                        }
                     }
                     break;
                 case STATE.LIST_ITEM_START:
                     if (c === ` `) {
+                        this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
                         this.iAdjust = i+2;
                         if (!this.items.length) {
@@ -689,7 +704,7 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
-                        const inlineOutput = this._closeInlineStuff(0, i).trim()
+                        const inlineOutput = this._closeInlineStuff(0, i - 1).trim()
                         this.items.push(inlineOutput);
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
@@ -700,8 +715,6 @@ class MarkdownParser extends Transform {
                         this._closeAllPrevious(toPush);
                         this._refresh();
                         this.state = STATE.HORIZONTAL_RULE;
-                    } else if (c === `.` && this.listTypeOrdered[this.listTypeOrdered.length - 1]) {
-                        // ignore dot for ordered list item
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -717,7 +730,7 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i - this.iAdjust);
+                        this._closeCurrent(toPush, i);
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
