@@ -243,11 +243,11 @@ class MarkdownParser extends Transform {
                             // reference from a previous link
                             const colon = findClosingSimple(closingIndex+1, `:`);
                             if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
-                                const slug = slugify(this.currentString.substring(i+1, closingPosition));
+                                const slug = slugify(this.currentString.substring(i+1, closingPosition+1));
                                 htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
-                                    this.currentString.substring(this.indexes[colon].i+1, currentStringEnd).trim()
+                                    this.currentString.substring(this.indexes[colon].i+2, currentStringEnd).trim()
                                 )}">${
-                                    this.currentString.substring(i+1, closingPosition)
+                                    this.currentString.substring(i+2, closingPosition+1)
                                 }</a>`;
                                 j = end;
                                 lastUsed = currentStringEnd
@@ -432,8 +432,16 @@ class MarkdownParser extends Transform {
             skip = this.skip;
             i -= skip;    
         }
-        const inlineOutput = this._closeInlineStuff(0, i).trim();
+        let inlineOutput;
+        if (this.state !== STATE.HORIZONTAL_RULE) {
+            inlineOutput = this._closeInlineStuff(0, i).trim();
+        }
         switch (this.state) {
+            case STATE.HORIZONTAL_RULE:
+                toPush.push(`<hr>`);
+                this._refresh();
+                this.state = STATE.TEXT;
+                break;
             case STATE.TEXT:
                 toPush.push(`<p>${inlineOutput}</p>`);
                 this._refresh();
@@ -480,8 +488,7 @@ class MarkdownParser extends Transform {
             i += skip;    
         }
         this.iAdjust = i+1;
-        this.currentString = this.currentString.substr(i+1);
-
+        this.currentString = this.currentString.substr(i);
     }
 
     _noteWorthyCharacters(c, i) {
@@ -534,8 +541,9 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
-                        toPush.push(`<hr>`);
-                        this._refresh();
+                        this._closeCurrent(toPush, i);
+                    } else {
+                        this.skip += 1;
                     }
                     break;
                 case STATE.POTENTIAL_HTML:
@@ -626,6 +634,8 @@ class MarkdownParser extends Transform {
                                     // this._selfBuffer(` `);
                                     this.newLined = false;
                                 }
+                                this.firstCharcater = false
+                                
                                 if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
                                     this.firstCharcater = false;
                                     continue;
@@ -642,9 +652,6 @@ class MarkdownParser extends Transform {
                                 continue;
                             }
                         }
-                    }
-                    if(c !== ` `) {
-                        this.firstCharcater = false
                     }
                     break;
                 case STATE.QUOTE:
@@ -700,11 +707,17 @@ class MarkdownParser extends Transform {
                             this.currentString = this.currentString.substr(1);
                         }
                     } else {
-                        // revert 
-                        this.indexes.push({c: this.lastCharacter,i: i-1 - this.iAdjust});
-                        // force go loop to go again with current character
-                        i -= 1;
-                        this.state = STATE.TEXT;
+                        if (c === `-`) {
+                            this._refresh();
+                            this.state = STATE.HORIZONTAL_RULE;
+                            this.skip = 2;
+                        } else {
+                            // revert 
+                            this.indexes.push({c: this.lastCharacter,i: i-1 - this.iAdjust});
+                            // force go loop to go again with current character
+                            i -= 1;
+                            this.state = STATE.TEXT;
+                        }
                     }
                     break;
                 case STATE.LIST_ITEM_TEXT:
@@ -720,11 +733,6 @@ class MarkdownParser extends Transform {
                         this.state = STATE.LIST_ITEM_END;
                         this.iAdjust = i+1;
                         this.currentString = this.currentString.substr(i+1);
-                    } else if (!this.items.length && c === `-` && this.lastCharacter === `-`) {
-                        this.state = STATE.HORIZONTAL_RULE;
-                        this._closeAllPrevious(toPush);
-                        this._refresh();
-                        this.state = STATE.HORIZONTAL_RULE;
                     }
                     break;
                 case STATE.TITLE_TEXT:
