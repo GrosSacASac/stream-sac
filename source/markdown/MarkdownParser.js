@@ -489,8 +489,9 @@ class MarkdownParser extends Transform {
     }
 
     _transform(buffer, encoding, done) {
-        const asString = String(buffer);
-        this._selfBuffer(asString);
+        const bufferAsString = String(buffer);
+        this._selfBuffer(bufferAsString);
+        const asString = this.currentString;
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
         let finished = 0;
