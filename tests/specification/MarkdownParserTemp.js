@@ -66,6 +66,19 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
+test(`title`, async t => {
+    const markdownParser = new MarkdownParser();
+    const titleText = `title`
+    concatAsStream([`# ${titleText}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, `<h1>${titleText}</h1>`);
+});
+
 
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();

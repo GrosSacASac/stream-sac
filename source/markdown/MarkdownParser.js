@@ -459,7 +459,7 @@ class MarkdownParser extends Transform {
                 break;
             
             case STATE.TITLE_TEXT:
-                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
+                toPush.push(`<h${this.titleLevel}>${inlineOutput}</h${this.titleLevel}>`);
                 this._refresh();
                 this.state = STATE.TEXT;
                 break;
@@ -597,7 +597,6 @@ class MarkdownParser extends Transform {
                     } else {
                         if (this.firstCharcater) {
                             if (c === `#`) {
-                                this._closeAllPrevious(toPush);
                                 this.state = STATE.START_TITLE;
                                 this.titleLevel = 1;
                             } else if (c === `*` || c === `-`) {
@@ -720,14 +719,11 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.TITLE_TEXT:
-                    if (!this._noteWorthyCharacters(c, toPush)) {
+                    if (this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `\n`) {
-                        // this._closeCurrent(toPush);
-                    } else {
-                        c = this._escapeHtml(c);
-                        this._selfBuffer(c);
+                        this._closeCurrent(toPush, i);
                     }
                     break;
                 case STATE.LIST_ITEM_END:
@@ -745,9 +741,10 @@ class MarkdownParser extends Transform {
                         this.titleLevel += 1;
                     } else if (isWhitespace(c)) {
                         this.state = STATE.TITLE_TEXT;
+                        this.iAdjust += this.titleLevel;
+                        this.currentString = this.currentString.substr(this.titleLevel);
                     } else {
                         //malformed title
-                        this._selfBuffer(`${"#".repeat(this.titleLevel)}${c}`);
                         this.state = STATE.TEXT;
                     }
                     break;
