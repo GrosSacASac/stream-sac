@@ -515,6 +515,23 @@ test(`unordered list`, async t => {
     t.is(forceBuffer, (`<ul><li>${listItem}</li><li>${otherListItem}</li></ul>`));
 });
 
+test(`unordered list with end of line`, async t => {
+    const markdownParser = new MarkdownParser();
+    const listItem = `xxx yyy`
+    const otherListItem = `eee uuu`
+    concatAsStream([` * ${listItem}
+ * ${otherListItem}
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<ul><li>${listItem}</li><li>${otherListItem}</li></ul>`));
+});
+
+
 test(`ordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const listItem = `aaa bbb`

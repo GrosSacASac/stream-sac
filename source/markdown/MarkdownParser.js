@@ -66,6 +66,7 @@ const STATE = {
     UNDERTITLE2: i++,
     ORDERED_LIST_START: i++,
     LIST_ITEM_TEXT: i++,
+    LIST_ITEM_START: i++,
     LIST_ITEM_END: i++,
     QUOTE: i++,
     HORIZONTAL_RULE: i++,
@@ -101,6 +102,7 @@ class MarkdownParser extends Transform {
         this.firstCharcater = true;
         this.indexes = [];
         this.state = STATE.TEXT;
+        this.lastCharacter = ``;
         this.linkText = ``;
         this.rawDescription = ``;
         this._currentTagName = ``;
@@ -430,21 +432,10 @@ class MarkdownParser extends Transform {
                 toPush.push(`<p>${inlineOutput}</p>`);
                 this._refresh();
                 break;
-            case STATE.QUOTE:
-                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
-                this._refresh();
-                break;
-            
-            case STATE.TITLE_TEXT:
-                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
-                this._refresh();
-                this.state = STATE.TEXT;
-                break;
-            
             case STATE.LIST_ITEM_TEXT:
-                this.items.push(this.currentString);
+                this.items.push(inlineOutput);
+                this._refresh();
             case STATE.LIST_ITEM_END:
-
                 const wasOrdered = this.listTypeOrdered.pop();
                 let listContainerHtml;
                 if (wasOrdered) {
@@ -460,6 +451,17 @@ class MarkdownParser extends Transform {
                 this.items = [];
                 this._refresh();
                 break;
+            case STATE.QUOTE:
+                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
+                this._refresh();
+                break;
+            
+            case STATE.TITLE_TEXT:
+                toPush.push(`<h${this.titleLevel}>${this.currentString}</h${this.titleLevel}>`);
+                this._refresh();
+                this.state = STATE.TEXT;
+                break;
+            
             default:
                 return;
             
@@ -579,7 +581,6 @@ class MarkdownParser extends Transform {
                     break;
 
                 case STATE.TEXT:
-                    
                     if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush, i);
@@ -597,7 +598,8 @@ class MarkdownParser extends Transform {
                                 this.state = STATE.START_TITLE;
                                 this.titleLevel = 1;
                             } else if (c === `*` || c === `-`) {
-                                this.state = STATE.LIST_ITEM_TEXT;
+                                this.state = STATE.LIST_ITEM_START;
+                                this.lastCharacter = c;
                                 this.listTypeOrdered.push(false);
                             } else if (c === `0` || c === `1`) {
                                 this.state = STATE.ORDERED_LIST_START;
@@ -663,19 +665,36 @@ class MarkdownParser extends Transform {
                         this._selfBuffer(c);
                     }
                     break;
+                case STATE.LIST_ITEM_START:
+                    if (c === ` `) {
+                        this.state = STATE.LIST_ITEM_TEXT;
+                        this.iAdjust = i+2;
+                        if (!this.items.length) {
+                            this.currentString = this.currentString.substr(2);
+                        } else {
+                            this.currentString = this.currentString.substr(1);
+                        }
+                    } else {
+                        // revert 
+                        this.indexes.push({c: this.lastCharacter,i: i-1 - this.iAdjust});
+                        // force go loop to go again with current character
+                        i -= 1;
+                        this.state = STATE.TEXT;
+                    }
+                    break;
                 case STATE.LIST_ITEM_TEXT:
-                    if (!this._noteWorthyCharacters(c, toPush)) {
-                        this.firstVisibleCharacterPassed = true;
+                    if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
                         continue;
                     }
                     if (c === `\n`) {
-                        this.items.push(this.currentString)
+                        // do not this._closeCurrent(toPush, i);
+                        // since it will also close the list (to handle lists at the end of markdown without line break
+                        const inlineOutput = this._closeInlineStuff(0, i).trim()
+                        this.items.push(inlineOutput);
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
-                    } else if (isWhitespace(c)) {
-                        if (this.firstVisibleCharacterPassed) {
-                            this._selfBuffer(c);
-                        }
+                        this.iAdjust = i+1;
+                        this.currentString = this.currentString.substr(i+1);
                     } else if (!this.items.length && c === `-` && this.lastCharacter === `-`) {
                         this.state = STATE.HORIZONTAL_RULE;
                         this._closeAllPrevious(toPush);
@@ -683,10 +702,6 @@ class MarkdownParser extends Transform {
                         this.state = STATE.HORIZONTAL_RULE;
                     } else if (c === `.` && this.listTypeOrdered[this.listTypeOrdered.length - 1]) {
                         // ignore dot for ordered list item
-                    } else {
-                        c = this._escapeHtml(c);
-                        this._selfBuffer(c);
-                        this.firstVisibleCharacterPassed = true;
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -702,10 +717,10 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
-                        // this._closeCurrent(toPush);
+                        this._closeCurrent(toPush, i - this.iAdjust);
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
-                        this.state = STATE.LIST_ITEM_TEXT;
+                        this.state = STATE.LIST_ITEM_START;
                     } else if (Number.isFinite(Number(c))) {
                         this.state = STATE.LIST_ITEM_TEXT;
                     }
