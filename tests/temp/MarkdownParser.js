@@ -93,8 +93,7 @@ test(`title alternative`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
     concatAsStream([`${titleText}
-========
-`]).pipe(markdownParser);
+========`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -121,8 +120,7 @@ test(`title 2 alternative`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
     concatAsStream([`${titleText}
------
-`]).pipe(markdownParser);
+-----`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -134,7 +132,6 @@ test(`title 2 alternative`, async t => {
 
 test(`separator`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
     concatAsStream([`a
 
 -----

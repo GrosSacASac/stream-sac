@@ -108,6 +108,7 @@ class MarkdownParser extends Transform {
         this._currentTagName = ``;
         this.inlineRaw = true;
         this.titleLevel = 0;
+        this.skip = 0;
         this.closingBackTicks = 0;
         this.firstVisibleCharacterPassed = false;
         this.newLined = false;
@@ -426,6 +427,11 @@ class MarkdownParser extends Transform {
     }
 
     _closeCurrent(toPush, i = this.currentString.length) {
+        let skip;
+        if (this.skip) {
+            skip = this.skip;
+            i -= skip;    
+        }
         const inlineOutput = this._closeInlineStuff(0, i).trim();
         switch (this.state) {
             case STATE.TEXT:
@@ -457,7 +463,8 @@ class MarkdownParser extends Transform {
                 this._refresh();
                 this.state = STATE.TEXT;
                 break;
-            
+            case STATE.UNDERTITLE1:
+            case STATE.UNDERTITLE2:
             case STATE.TITLE_TEXT:
                 toPush.push(`<h${this.titleLevel}>${inlineOutput}</h${this.titleLevel}>`);
                 this._refresh();
@@ -467,6 +474,10 @@ class MarkdownParser extends Transform {
             default:
                 return;
             
+        }
+
+        if (skip) {
+            i += skip;    
         }
         this.iAdjust = i+1;
         this.currentString = this.currentString.substr(i+1);
@@ -514,17 +525,11 @@ class MarkdownParser extends Transform {
             }
             switch (this.state) {
                 case STATE.UNDERTITLE1:
-                    if (c === `\n`) {
-                        this.titleLevel = 1
-                        this.state = STATE.TITLE_TEXT;
-                        // this._closeCurrent(toPush);
-                    }
-                    break;
                 case STATE.UNDERTITLE2:
-                        if (c === `\n`) {
-                        this.titleLevel = 2
-                        this.state = STATE.TITLE_TEXT;
-                        // this._closeCurrent(toPush);
+                    if (c === `\n`) {
+                        this._closeCurrent(toPush, i);
+                    } else {
+                        this.skip += 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
@@ -592,8 +597,12 @@ class MarkdownParser extends Transform {
                         }
                     } else if (c === `=` && this.newLined) {
                         this.state = STATE.UNDERTITLE1;
+                        this.titleLevel = 1;
+                        this.skip = 1;
                     } else if (c === `-` && this.newLined) {
                         this.state = STATE.UNDERTITLE2;
+                        this.titleLevel = 2;
+                        this.skip = 1;
                     } else {
                         if (this.firstCharcater) {
                             if (c === `#`) {
