@@ -34,6 +34,23 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
+test(`quote`, async t => {
+    const markdownParser = new MarkdownParser();
+    const quote = `An eye for an eye leaves the whole world blind`
+    const author = `Gandhi`
+    concatAsStream([`> ${quote}
+
+${author}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
+});
+
+
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`
@@ -313,5 +330,23 @@ test(`ordered list`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<ol><li>${listItem}</li><li>${otherListItem}</li></ol>`));
+});
+
+
+
+test(`link inside unordered list`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://example.com/`
+    const linkText = `example`
+    const otherListItem = `ccc ddd`
+    concatAsStream([` 1. [${linkText}](${linkTarget})
+ 2. ${otherListItem}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<ol><li><a href="${linkTarget}">${linkText}</a></li><li>${otherListItem}</li></ol>`));
 });
 

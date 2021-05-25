@@ -255,8 +255,6 @@ test(`link in the middle of list items`, async t => {
 });
 
 
-
-
 test(`raw inline`, async t => {
     const markdownParser = new MarkdownParser();
     const text = `*special text*`
@@ -699,5 +697,22 @@ test(`link inside emphasis alternative syntax`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p><em>${x}<a href="${linkTarget}">${linkText}</a></em></p>`));
+});
+
+
+test(`link inside unordered list`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://example.com/`
+    const linkText = `example`
+    const otherListItem = `ccc ddd`
+    concatAsStream([` 1. [${linkText}](${linkTarget})
+ 2. ${otherListItem}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<ol><li><a href="${linkTarget}">${linkText}</a></li><li>${otherListItem}</li></ol>`));
 });
 

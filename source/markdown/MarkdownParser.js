@@ -432,6 +432,11 @@ class MarkdownParser extends Transform {
                 toPush.push(`<p>${inlineOutput}</p>`);
                 this._refresh();
                 break;
+            case STATE.QUOTE:
+                toPush.push(`<blockquote><p>${inlineOutput}</p></blockquote>`);
+                this._refresh();
+                this.state = STATE.TEXT;
+                break;
             case STATE.LIST_ITEM_TEXT:
                 this.items.push(inlineOutput);
                 this._refresh();
@@ -450,10 +455,7 @@ class MarkdownParser extends Transform {
                 toPush.push(`</${listContainerHtml}>`);
                 this.items = [];
                 this._refresh();
-                break;
-            case STATE.QUOTE:
-                toPush.push(`<blockquote><p>${this.currentString.trim()}</p></blockquote>`);
-                this._refresh();
+                this.state = STATE.TEXT;
                 break;
             
             case STATE.TITLE_TEXT:
@@ -605,6 +607,8 @@ class MarkdownParser extends Transform {
                                 this.lastCharacter = c;
                             } else if (c === `>`) {
                                 this.state = STATE.QUOTE;
+                                this.iAdjust += 1;
+                                this.currentString = this.currentString.substr(1);
                             } else if (isWhitespace(c)) {
 
                             } else {
@@ -635,22 +639,19 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.QUOTE:
-                    if (!this._noteWorthyCharacters(c, toPush)) {
+                    if (this._noteWorthyCharacters(c, toPush)) {
                         continue;
                     }
                     if (c === `\n`) {
                         if (this.newLined) {
-                            // this._closeCurrent(toPush);
+                            this._closeCurrent(toPush, i-1);
                         } else {
                             this.newLined = true;
                         }
                     } else {
-                        c = this._escapeHtml(c);
                         if (this.newLined) {
-                            this._selfBuffer(` `);
                             this.newLined = false;
                         }
-                        this._selfBuffer(c);
                     }
                     break;
                 case STATE.ORDERED_LIST_START:
