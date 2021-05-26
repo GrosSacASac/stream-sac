@@ -235,6 +235,27 @@ test(`link in the middle of text`, async t => {
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
 });
+test(`link in the middle of list items`, async t => {
+    const markdownParser = new MarkdownParser();
+    const linkTarget = `https://surge.sh/`
+    const linkText = `surge`
+    const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`
+    const linkText2 = `blog-engine-sac`
+    concatAsStream([` - [${linkText}](${linkTarget}) to deploy any local HTML, CSS, JS file to a website
+ - [${linkText2}](${linkTarget2}) to create a website from markdown files`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const a = `<li><a href="${linkTarget}">${linkText}</a> to deploy any local HTML, CSS, JS file to a website</li>`;
+    const b = `<li><a href="${linkTarget2}">${linkText2}</a> to create a website from markdown files</li>`;
+    t.is(forceBuffer, (`<ul>${a}${b}</ul>`));
+});
+
+
 
 test(`raw inline`, async t => {
     const markdownParser = new MarkdownParser();

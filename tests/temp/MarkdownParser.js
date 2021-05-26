@@ -245,8 +245,6 @@ test(`link in the middle of text`, async t => {
 
 test(`link in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
-    let textbefore = `aaa`;
-    let textafter = `bbb`;
     const linkTarget = `https://surge.sh/`
     const linkText = `surge`
     const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`
