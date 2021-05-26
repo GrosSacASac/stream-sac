@@ -123,12 +123,64 @@ class MarkdownParser extends Transform {
         if (!this.indexes.length) {
             return this.currentString.substr(currentStringStart, currentStringEnd);
         }
+        
+        // scan for links
+        // remove special characters found inside links
+        // parse markdown with special characters left
+        // plaintext replace detected link with actual links (done inside parsing to avoid messing up reference links)
+        const scanForLinks = (plainText, start, stop) => {
+            const words = plainText.split(` `);
+            return words.reduce((links, word) => {
+                if (word.startsWith("https://") || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
+                    const index= plainText.indexOf(word);
+                    const indexEnd= index + word.length;
+                    if (index >= start && indexEnd <= stop) {
+                        links.push({
+                            i: index,
+                            iEnd: indexEnd,
+                            original: word,
+                            replacement: `<a href="${word}">${word}</a>`,
+                        });
+                    }
+                }
+                return links;
+            }, []);
+        };
+
+        const removeIndexesInsideLinks = (indexes, links) => {
+            let indexesI = 0;
+            let linksI = 0;
+            let position = 0;
+            while (linksI < links.length && indexesI < indexes.length) {
+                const link = links[linksI];
+                while (position !== undefined && position < link.iEnd) {
+                    const index = indexes[indexesI];
+                    position = index?.i;
+                    if (position !== undefined && position >= link.i && position <= link.iEnd) {
+                        // inside a link remove
+                        indexes.splice(indexesI, 1);
+                        end -= 1;
+                    } else {
+                        indexesI += 1;
+                    }
+                }
+                linksI += 1;
+            }
+        }
+        const replaceThings = (text, links) => {
+            links.forEach(({original, replacement}) => {
+                text = text.replace(original, replacement);
+            });
+            return text;
+        };
+        const links = scanForLinks(this.currentString, currentStringStart, currentStringEnd);
+        removeIndexesInsideLinks(this.indexes, links);
         let htmlOutput = ``;
+        let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
         if (this.indexes[start]?.i !== 0) {
-            htmlOutput = `${escapeHtml(this.currentString.substring(currentStringStart, this.indexes[start]?.i || currentStringEnd))}`;
+            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, lastUsed)), links)}`;
         }
         let absorbedIndex = 0;
-        let lastUsed = this.indexes[start]?.i || 0;
         let j;
         const nextCharacter = () => {
             return this.indexes[j+1]?.c;
@@ -184,13 +236,13 @@ class MarkdownParser extends Transform {
                         this.indexes[j+1].u = true;
                         this.indexes[closingPairIndex].u = true;
                         this.indexes[closingPairIndex+1].u = true;
-                        htmlOutput = `${htmlOutput}<del>${
+                        htmlOutput = `${htmlOutput}<del>${replaceThings(
                             this._closeInlineStuff(
                                 nextIndex()+1,
                                 this.indexes[closingPairIndex].i,
                                 j+2,
                                 closingPairIndex,
-                            )}</del>`;
+                            ), links)}</del>`;
                         j = closingPairIndex + 1;
                         lastUsed = this.indexes[closingPairIndex].i+2
                     }
@@ -311,12 +363,12 @@ class MarkdownParser extends Transform {
                         this.indexes[closingPairIndex].u = true;
                         this.indexes[closingPairIndex+1].u = true;
                         htmlOutput = `${htmlOutput}<strong>${
-                            this._closeInlineStuff(
+                            replaceThings(this._closeInlineStuff(
                                 nextIndex()+1,
                                 this.indexes[closingPairIndex].i,
                                 j+2,
                                 closingPairIndex,
-                            )}</strong>`;
+                            ), links)}</strong>`;
                         j = closingPairIndex + 1;
                         lastUsed = this.indexes[closingPairIndex].i+2
                     } else {
@@ -327,12 +379,12 @@ class MarkdownParser extends Transform {
                     if (nextStar) {
                         this.indexes[nextStar].u = true;
                         htmlOutput = `${htmlOutput}<em>${
-                            this._closeInlineStuff(
+                            replaceThings(this._closeInlineStuff(
                                 i+1,
                                 this.indexes[nextStar].i,
                                 j+1,
                                 nextStar,
-                            )}</em>`;
+                            ), links)}</em>`;
                         j = nextStar + 1;
                         lastUsed = this.indexes[nextStar].i+1;
                     } 
@@ -347,12 +399,12 @@ class MarkdownParser extends Transform {
                         this.indexes[closingPairIndex].u = true;
                         this.indexes[closingPairIndex+1].u = true;
                         htmlOutput = `${htmlOutput}<strong>${
-                            this._closeInlineStuff(
+                            replaceThings(this._closeInlineStuff(
                                 nextIndex()+1,
                                 this.indexes[closingPairIndex].i,
                                 j+2,
                                 closingPairIndex,
-                            )}</strong>`;
+                            ), links)}</strong>`;
                         j = closingPairIndex + 1;
                         lastUsed = this.indexes[closingPairIndex].i+2
                     } else {
@@ -363,12 +415,12 @@ class MarkdownParser extends Transform {
                     if (nextStar) {
                         this.indexes[nextStar].u = true;
                         htmlOutput = `${htmlOutput}<em>${
-                            this._closeInlineStuff(
+                            replaceThings(this._closeInlineStuff(
                                 i+1,
                                 this.indexes[nextStar].i,
                                 j+1,
                                 nextStar,
-                            )}</em>`;
+                            ), links)}</em>`;
                         j = nextStar + 1;
                         lastUsed = this.indexes[nextStar].i+1;
                     } 
@@ -422,7 +474,7 @@ class MarkdownParser extends Transform {
                 this.closingBackTicks = 0;
             }
         }        
-        return `${htmlOutput}${escapeHtml(this.currentString.substring(lastUsed, currentStringEnd))}`;
+        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, currentStringEnd)), links)}`;
         
     }
 
