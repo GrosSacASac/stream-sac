@@ -735,11 +735,12 @@ class MarkdownParser extends Transform {
                         if (c === ` `) {
                             this.listTypeOrdered.push(true);
                             this.state = STATE.LIST_ITEM_TEXT;
-                            this.iAdjust = i;
                             if (!this.items.length) {
+                                this.iAdjust = i;
                                 this.currentString = this.currentString.substr(3);
                             } else {
-                                this.currentString = this.currentString.substr(2);
+                                this.iAdjust = i+1;
+                                this.currentString = this.currentString.substr(1);
                             }
                         } else {
                             // force go loop to go again with current character
@@ -752,10 +753,11 @@ class MarkdownParser extends Transform {
                     if (c === ` `) {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
-                        this.iAdjust = i+2;
                         if (!this.items.length) {
+                            this.iAdjust = i;
                             this.currentString = this.currentString.substr(2);
                         } else {
+                            this.iAdjust = i+1;
                             this.currentString = this.currentString.substr(1);
                         }
                     } else {
@@ -802,7 +804,8 @@ class MarkdownParser extends Transform {
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
                     } else if (Number.isFinite(Number(c))) {
-                        this.state = STATE.LIST_ITEM_TEXT;
+                        this.state = STATE.ORDERED_LIST_START;
+                        this.lastCharacter = c;
                     }
                     break;
                 case STATE.START_TITLE:
