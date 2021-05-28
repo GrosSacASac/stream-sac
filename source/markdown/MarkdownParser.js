@@ -426,16 +426,39 @@ class MarkdownParser extends Transform {
                     } 
                 }
             } else if (c === `\``) {
-                const nextBackTick = findClosingSimple(j+1, `\``);
-                if (nextBackTick) {
-                    //raw
-                    this.indexes[nextBackTick].u = true;
-                    htmlOutput = `${htmlOutput}<code>${
-                        escapeHtml(this.currentString.substring(i+1,this.indexes[nextBackTick].i))
-                    }</code>`;
-                    j = nextBackTick + 1;
-                    lastUsed = this.indexes[nextBackTick].i+1;
-                } 
+                let wastriplebacktick = false;
+                const restOfTripleOpening = findClosingPair(j+1, `\``);
+
+                
+                if (this.indexes[restOfTripleOpening]?.i === i +1) {
+                    const startOfTripleClosing = findClosingPair(j+3, `\``);
+                    if (startOfTripleClosing) {
+                        const lastClosing =  findClosingSimple(startOfTripleClosing+2, `\``);
+                        if (lastClosing) {
+                            this.indexes[lastClosing].u = true;
+                            this.indexes[lastClosing-2].u = true;
+                            this.indexes[lastClosing-1].u = true;
+                            htmlOutput = `${htmlOutput}<code>${
+                                escapeHtml(this.currentString.substring(i+3,this.indexes[lastClosing].i-1))
+                            }</code>`;
+                            j = lastClosing + 1;
+                            lastUsed = this.indexes[lastClosing].i+2;
+                            wastriplebacktick = true;
+                        }
+                    }
+                }
+                if (!wastriplebacktick) {
+                    const nextBackTick = findClosingSimple(j+1, `\``);
+                    if (nextBackTick) {
+                        //raw
+                        this.indexes[nextBackTick].u = true;
+                        htmlOutput = `${htmlOutput}<code>${
+                            escapeHtml(this.currentString.substring(i+1,this.indexes[nextBackTick].i))
+                        }</code>`;
+                        j = nextBackTick + 1;
+                        lastUsed = this.indexes[nextBackTick].i+1;
+                    }
+                }
             } else if (false) {
             
                 STATE.CLOSING_RAW

@@ -283,7 +283,6 @@ test(`link in the middle of ordered list items`, async t => {
     t.is(forceBuffer, (`<ol>${a}${b}</ol>`));
 });
 
-
 test(`raw inline`, async t => {
     const markdownParser = new MarkdownParser();
     const text = `*special text*`

@@ -276,8 +276,6 @@ test(`link in the middle of ordered list items`, async t => {
     t.is(forceBuffer, (`<ol>${a}${b}</ol>`));
 });
 
-
-
 test(`raw inline`, async t => {
     const markdownParser = new MarkdownParser();
     const text = `*special text*`
@@ -319,6 +317,18 @@ test(`raw in the middle of a paragraph`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>Want to make text look big ? Think about the reason first, maybe it is a title and <code>&lt;h1-6&gt;</code> should be used.</p>`));
+});
+
+test(`raw with backticks inside`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`\`\`\`typeof x === \`string\`\`\`\` for type checking .`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><code>typeof x === \`string\`</code> for type checking .</p>`));
 });
 
 test(`image`, async t => {
