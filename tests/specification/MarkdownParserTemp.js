@@ -331,6 +331,19 @@ test(`raw with backticks inside`, async t => {
     t.is(forceBuffer, (`<p><code>typeof x === \`string\`</code> for type checking .</p>`));
 });
 
+test(`raw in the middle of a paragraph with triple backticks`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `*special text*`
+    concatAsStream([`a \`\`\`<h1-6>\`\`\` c`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>a <code>&lt;h1-6&gt;</code> c</p>`));
+});
+
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();
     const altText = `drinking face`

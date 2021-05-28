@@ -439,10 +439,10 @@ class MarkdownParser extends Transform {
                             this.indexes[lastClosing-2].u = true;
                             this.indexes[lastClosing-1].u = true;
                             htmlOutput = `${htmlOutput}<code>${
-                                escapeHtml(this.currentString.substring(i+3,this.indexes[lastClosing].i-1))
+                                escapeHtml(this.currentString.substring(i+3,this.indexes[startOfTripleClosing].i))
                             }</code>`;
                             j = lastClosing + 1;
-                            lastUsed = this.indexes[lastClosing].i+2;
+                            lastUsed = this.indexes[lastClosing].i+1;
                             wastriplebacktick = true;
                         }
                     }
