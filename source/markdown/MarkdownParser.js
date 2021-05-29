@@ -648,10 +648,7 @@ class MarkdownParser extends Transform {
                 case STATE.POTENTIAL_HTML:
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
-                        this.state = this.inside.pop();
-                        if (this.state === STATE.TEXT) {
-                            this.state = STATE.TEXT;
-                        }
+                        
                         // correct and escape the <
                         this.currentString = this.currentString.substring(0, this.currentString.length - 1);
                         this._selfBuffer(escapeHtml(`<`));
@@ -669,7 +666,6 @@ class MarkdownParser extends Transform {
                         if (emptyElements.includes(currentTagName)) {
                             toPush.push(this.currentString);
                             this._refresh();
-                            this.state = this.inside.pop();
                         } else {
                             this._currentTagName = currentTagName;
                             this.state = STATE.INISIDE_HTML;
@@ -684,7 +680,6 @@ class MarkdownParser extends Transform {
                         if (this._currentTagName === this.currentString.slice(-this._currentTagName.length)) {
 
                             this._selfBuffer(c);
-                            this.state = this.inside.pop();
                         } else {
 
                             this._selfBuffer(c);
@@ -862,6 +857,8 @@ class MarkdownParser extends Transform {
                 case STATE.START_TITLE:
                     if (c === `#`) {
                         this.titleLevel += 1;
+                        
+                        
                     } else if (isWhitespace(c)) {
                         this.state = STATE.TITLE_TEXT;
                         this.iAdjust += this.titleLevel;
