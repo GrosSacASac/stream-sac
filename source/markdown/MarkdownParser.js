@@ -495,41 +495,6 @@ class MarkdownParser extends Transform {
                     }
                 }
             } else if (false) {
-            
-                STATE.CLOSING_RAW
-                let classText = ``;
-                if (this.rawDescription) {
-                    classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
-                }
-                
-                let currentInlineString;
-                if (!this.inlineRaw) {
-                    this.currentInlineString = this.currentInlineString.trim();
-                    let highlighted;
-                    if (this.highlight) {
-                        highlighted = this.highlight(this.currentInlineString, this.rawDescription);
-                    }
-                    if (highlighted) {
-                        currentInlineString = `<pre><code${classText}>${highlighted}</code></pre>`;
-                    } else {
-                        currentInlineString = `<pre><code${classText}>${escapeHtml(this.currentInlineString)}</code></pre>`;
-                    }
-                    
-                    toPush.push(currentInlineString);
-                    this.state = STATE.TEXT;
-                } else {
-                    currentInlineString = `<code${classText}>${escapeHtml(this.currentInlineString)}</code>`;
-                    if (this.inside.length) {
-                        this._selfBuffer(currentInlineString);
-                        this.state = this.inside.pop();
-                    } else {
-                        toPush.push(currentInlineString);
-                        this.state = STATE.TEXT;
-                    }
-                }
-                this.currentInlineString = ``;
-                this.rawDescription = ``;
-                this.closingBackTicks = 0;
             }
         }        
         return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, currentStringEnd)), links)}`;
@@ -543,7 +508,7 @@ class MarkdownParser extends Transform {
             i -= skip;    
         }
         let inlineOutput;
-        if (this.state !== STATE.HORIZONTAL_RULE) {
+        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW) {
             inlineOutput = this._closeInlineStuff(0, i).trim();
         }
         switch (this.state) {
@@ -553,7 +518,9 @@ class MarkdownParser extends Transform {
                 this.state = STATE.TEXT;
                 break;
             case STATE.TEXT:
-                toPush.push(`<p>${inlineOutput}</p>`);
+                if (inlineOutput)  {
+                    toPush.push(`<p>${inlineOutput}</p>`);
+                }
                 this._refresh();
                 break;
             case STATE.QUOTE:
@@ -587,6 +554,31 @@ class MarkdownParser extends Transform {
                 toPush.push(`<h${this.titleLevel}>${inlineOutput}</h${this.titleLevel}>`);
                 this._refresh();
                 this.state = STATE.TEXT;
+                break;
+            case STATE.CLOSING_RAW:
+                let classText = ``;
+                if (this.rawDescription) {
+                    classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
+                }
+                
+                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3).trim();
+                let currentInlineString;
+                
+                let highlighted;
+                if (this.highlight) {
+                    highlighted = this.highlight(rawString, this.rawDescription);
+                }
+                if (highlighted) {
+                    currentInlineString = `<pre><code${classText}>${highlighted}</code></pre>`;
+                } else {
+                    currentInlineString = `<pre><code${classText}>${escapeHtml(rawString)}</code></pre>`;
+                }
+                
+                toPush.push(currentInlineString);
+                this.state = STATE.TEXT;
+                
+                this.rawDescription = ``;
+                this.closingBackTicks = 0;
                 break;
             
             default:
@@ -634,10 +626,7 @@ class MarkdownParser extends Transform {
                     this.closingBackTicks += 1;
                     continue;
                 } else {
-                    if (this.closingBackTicks > this.backTicks) {
-                        this._selfInlineBuffer(`\``.repeat(this.closingBackTicks - this.backTicks));
-                    }
-                    // this._closeCurrent(toPush);
+                    this._closeCurrent(toPush, i);
                 }
             }
             switch (this.state) {
@@ -736,6 +725,10 @@ class MarkdownParser extends Transform {
                                 this.state = STATE.QUOTE;
                                 this.iAdjust += 1;
                                 this.currentString = this.currentString.substr(1);
+                            }  else if (c === `\``) {
+                                this.state = STATE.START_RAW;
+                                this.backTicks = 1;
+                                this.rawStartedAt = i;
                             } else if (isWhitespace(c)) {
 
                             } else {
@@ -883,39 +876,29 @@ class MarkdownParser extends Transform {
                     if (c === `\``) {
                         this.backTicks += 1;
                         if (this.backTicks === 3) {
-                            if (this.inside[this.inside.length - 1] !== STATE.FREE) {
-                                this.state = STATE.RAW;
-                                this.inlineRaw = true;
-                            } else {
-                                this.state = STATE.RAW_DESCRIPTION;
-                                this.inlineRaw = false;
-                            }
-                            
+                            this.state = STATE.RAW_DESCRIPTION;
+                            this.rawDescriptionStart = i+1;
                         } 
                     } else {
-                        if (this.inside[this.inside.length - 1] === STATE.FREE) {
-                            this.inside.push(STATE.TEXT);
+                        for (let q = this.rawStartedAt; q < i; q+=1) {
+                            this.indexes.push({c: `\``, i: q});
                         }
-                        this._selfInlineBuffer(c);
-                        this.state = STATE.RAW;
-                        this.inlineRaw = true;
+                        this.state = STATE.TEXT;
+                        this.backTicks = 0;
                     }
                     break;
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
-                        const description = this.currentInlineString;
-                        // this._refresh();
-                        this.currentInlineString = ``;
-                        this.rawDescription = description;
+                        this.rawDescription = this.currentString.substring(this.rawDescriptionStart, i);
+                        this.rawDescriptionEnd = i+1;
                         this.state = STATE.RAW;
-                    } else if (c === ` `) {
+                    } else if (!isAsciiLetter(c)) {
                         // not in the description but in the raw text all along
-                        this.inlineRaw = true;
-                        this.inside.push(STATE.TEXT);
-                        this.state = STATE.RAW;
-                        this._selfInlineBuffer(c);
-                    } else {
-                        this._selfInlineBuffer(c);
+                        for (let q = this.rawStartedAt; q < this.rawStartedAt + 3; q+=1) {
+                            this.indexes.push({c: `\``, i: q});
+                        }
+                        this.state = STATE.TEXT;
+                        this.backTicks = 0;
                     }
                     break;
                 case STATE.RAW:
@@ -926,11 +909,8 @@ class MarkdownParser extends Transform {
                         }
                     } else {
                         if (this.closingBackTicks) {
-                            this._selfInlineBuffer(`\``.repeat(this.closingBackTicks));
                             this.closingBackTicks = 0;
                         }
-                        
-                        this._selfInlineBuffer(c);
                     }
                     break;
                 default:
