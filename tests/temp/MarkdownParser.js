@@ -364,18 +364,18 @@ test(`raw html code is displayed properly`, async t => {
 test(`raw and titles`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`
-    ## a
+## a
 
-    \`\`\`
-    b
-    \`\`\`
-    
-    ## d
-    
-    \`\`\`e
-    f
-    \`\`\`
-    `]).pipe(markdownParser);
+\`\`\`
+b
+\`\`\`
+
+## d
+
+\`\`\`e
+f
+\`\`\`
+`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
