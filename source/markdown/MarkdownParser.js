@@ -209,22 +209,43 @@ class MarkdownParser extends Transform {
         }
         const findLastClosingTriple = (after, targetC) => {
             let result;
+            let confirmedResult;
             let firstFound = false;
             let firstIndex = 0;
+            let secondFound = false;
+            let secondIndex = false;
+            let thirdIndex;
             for (let k = after; k < end; k+= 1) {
                 const {i, c} = this.indexes[k];
                 if (c === targetC) {
-                    if (!firstFound || firstIndex + 1 !== i) {
+                    if (!firstFound || (!secondFound && firstIndex + 1 !== i)) {
                         firstFound = true;
                         firstIndex = i;
                         result = k;
+                    } else if (!secondFound) {
+                        secondFound = true;
+                        secondIndex = i;
+                    } else if (secondIndex + 1 === i) {
+                        confirmedResult = result;
+                        thirdIndex = i;
+                    } else if (confirmedResult) {
+                        if (i === thirdIndex + 1) {
+                            // 4 or 5  back ticks in a row
+                            confirmedResult += 1;
+                            thirdIndex += 1; 
+                        } else {
+                            break;
+                        }
                     } else {
-                        return result;
+                        firstFound = false;
+                        secondFound = false;
                     }
                 } else {
                     firstFound = false;
+                    secondFound = false;
                 }
-            } 
+            }
+            return confirmedResult;
         }
         const findClosingSimple = (after, targetC) => {
             for (let k = after; k < end; k+= 1) {
@@ -447,23 +468,18 @@ class MarkdownParser extends Transform {
             } else if (c === `\``) {
                 let wastriplebacktick = false;
                 const restOfTripleOpening = findClosingPair(j+1, `\``);
-
-                
                 if (this.indexes[restOfTripleOpening]?.i === i +1) {
-                    const startOfTripleClosing = findClosingPair(j+3, `\``);
+                    const startOfTripleClosing = findLastClosingTriple(j+3, `\``);
                     if (startOfTripleClosing) {
-                        const lastClosing =  findClosingSimple(startOfTripleClosing+2, `\``);
-                        if (lastClosing) {
-                            this.indexes[lastClosing].u = true;
-                            this.indexes[lastClosing-2].u = true;
-                            this.indexes[lastClosing-1].u = true;
-                            htmlOutput = `${htmlOutput}<code>${
-                                escapeHtml(this.currentString.substring(i+3,this.indexes[startOfTripleClosing].i))
-                            }</code>`;
-                            j = lastClosing + 1;
-                            lastUsed = this.indexes[lastClosing].i+1;
-                            wastriplebacktick = true;
-                        }
+                        this.indexes[startOfTripleClosing].u = true;
+                        this.indexes[startOfTripleClosing+2].u = true;
+                        this.indexes[startOfTripleClosing+1].u = true;
+                        htmlOutput = `${htmlOutput}<code>${
+                            escapeHtml(this.currentString.substring(i+3,this.indexes[startOfTripleClosing].i))
+                        }</code>`;
+                        j = startOfTripleClosing + 3;
+                        lastUsed = this.indexes[startOfTripleClosing].i+3;
+                        wastriplebacktick = true;
                     }
                 }
                 if (!wastriplebacktick) {
