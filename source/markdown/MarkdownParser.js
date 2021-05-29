@@ -207,6 +207,25 @@ class MarkdownParser extends Transform {
                 }
             } 
         }
+        const findLastClosingTriple = (after, targetC) => {
+            let result;
+            let firstFound = false;
+            let firstIndex = 0;
+            for (let k = after; k < end; k+= 1) {
+                const {i, c} = this.indexes[k];
+                if (c === targetC) {
+                    if (!firstFound || firstIndex + 1 !== i) {
+                        firstFound = true;
+                        firstIndex = i;
+                        result = k;
+                    } else {
+                        return result;
+                    }
+                } else {
+                    firstFound = false;
+                }
+            } 
+        }
         const findClosingSimple = (after, targetC) => {
             for (let k = after; k < end; k+= 1) {
                 const {i, c} = this.indexes[k];
