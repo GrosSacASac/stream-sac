@@ -343,6 +343,29 @@ test(`raw in the middle of a paragraph with triple backticks`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>a <code>&lt;h1-6&gt;</code> c</p>`));
 });
+test(`raw html code is displayed properly`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    \`\`\`html
+<style>
+    .block{display: block; margin-bottom: 0.5em;}
+
+
+</style>
+\`\`\`
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<pre><code class="language-html">&lt;style&gt;
+    .block{display: block; margin-bottom: 0.5em;}
+
+
+&lt;/style&gt;</code></pre>`));
+});
 
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();

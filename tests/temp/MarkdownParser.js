@@ -342,6 +342,8 @@ test(`raw html code is displayed properly`, async t => {
     \`\`\`html
 <style>
     .block{display: block; margin-bottom: 0.5em;}
+
+
 </style>
 \`\`\`
     `]).pipe(markdownParser);
@@ -353,6 +355,8 @@ test(`raw html code is displayed properly`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<pre><code class="language-html">&lt;style&gt;
     .block{display: block; margin-bottom: 0.5em;}
+
+
 &lt;/style&gt;</code></pre>`));
 });
 
