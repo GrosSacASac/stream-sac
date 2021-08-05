@@ -108,9 +108,9 @@ class MarkdownParser extends Transform {
         this._currentTagName = ``;
         this.inlineRaw = true;
         this.titleLevel = 0;
-        this.skip = 0;
+        this.skipStart = 0;
+        this.skipEnd = 0;
         this.closingBackTicks = 0;
-        this.firstVisibleCharacterPassed = false;
         this.newLined = false;
     }
 
@@ -501,8 +501,8 @@ class MarkdownParser extends Transform {
 
     _closeCurrent(toPush, i = this.currentString.length) {
         let skip;
-        if (this.skip) {
-            skip = this.skip;
+        if (this.skipEnd) {
+            skip = this.skipEnd;
             i -= skip;    
         }
         let inlineOutput;
@@ -632,14 +632,14 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i);
                     } else {
-                        this.skip += 1;
+                        this.skipEnd += 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i);
                     } else {
-                        this.skip += 1;
+                        this.skipEnd += 1;
                     }
                     break;
                 case STATE.POTENTIAL_HTML:
@@ -689,6 +689,7 @@ class MarkdownParser extends Transform {
 
                 case STATE.TEXT:
                     if (c === `\n`) {
+                        this.skipStart += 1;
                         if (this.newLined) {
                             this._closeCurrent(toPush, i);
                         } else {
@@ -697,11 +698,11 @@ class MarkdownParser extends Transform {
                     } else if (c === `=` && this.newLined) {
                         this.state = STATE.UNDERTITLE1;
                         this.titleLevel = 1;
-                        this.skip = 1;
+                        this.skipEnd = 1;
                     } else if (c === `-` && this.newLined) {
                         this.state = STATE.UNDERTITLE2;
                         this.titleLevel = 2;
-                        this.skip = 1;
+                        this.skipEnd = 1;
                     } else {
                         if (this.firstCharcater) {
                             if (c === `#`) {
@@ -722,7 +723,7 @@ class MarkdownParser extends Transform {
                                 this.backTicks = 1;
                                 this.rawStartedAt = i;
                             } else if (isWhitespace(c)) {
-
+                                this.skipStart += 1
                             } else {
                                 // c = this._escapeHtml(c); // todo when closing
                                 if (this.newLined) {
@@ -807,7 +808,7 @@ class MarkdownParser extends Transform {
                         if (c === `-`) {
                             this._refresh();
                             this.state = STATE.HORIZONTAL_RULE;
-                            this.skip = 2;
+                            this.skipEnd = 2;
                         } else {
                             // revert 
                             this.indexes.push({c: this.lastCharacter,i: i-1 - this.iAdjust});
@@ -856,8 +857,8 @@ class MarkdownParser extends Transform {
                         this.titleLevel += 1;
                     } else if (isWhitespace(c)) {
                         this.state = STATE.TITLE_TEXT;
-                        this.iAdjust += this.titleLevel;
-                        this.currentString = this.currentString.substr(this.titleLevel);
+                        this.iAdjust += this.titleLevel + this.skipStart;
+                        this.currentString = this.currentString.substr(this.titleLevel + this.skipStart);
                     } else {
                         //malformed title
                         this.state = STATE.TEXT;
