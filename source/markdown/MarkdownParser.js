@@ -119,7 +119,6 @@ class MarkdownParser extends Transform {
     }
 
     _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = this.indexes.length) {
-        this.currentString
         if (!this.indexes.length) {
             return this.currentString.substr(currentStringStart, currentStringEnd);
         }
@@ -180,7 +179,6 @@ class MarkdownParser extends Transform {
         if (this.indexes[start]?.i !== 0) {
             htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, lastUsed)), links)}`;
         }
-        let absorbedIndex = 0;
         let j;
         const nextCharacter = () => {
             return this.indexes[j+1]?.c;
@@ -614,7 +612,6 @@ class MarkdownParser extends Transform {
         const asString = this.currentString;
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
-        let finished = 0;
 
         for (let i = 0; i < length; i += 1) {
             let c = asString[i];
@@ -857,8 +854,6 @@ class MarkdownParser extends Transform {
                 case STATE.START_TITLE:
                     if (c === `#`) {
                         this.titleLevel += 1;
-                        
-                        
                     } else if (isWhitespace(c)) {
                         this.state = STATE.TITLE_TEXT;
                         this.iAdjust += this.titleLevel;
