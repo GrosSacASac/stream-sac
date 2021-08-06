@@ -119,8 +119,12 @@ class MarkdownParser extends Transform {
     }
 
     _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = this.indexes.length) {
+        if (this.skipStart) {
+            currentStringStart += this.skipStart;
+            this.skipStart = 0;
+        }
         if (!this.indexes.length) {
-            return this.currentString.substr(currentStringStart, currentStringEnd);
+            return this.currentString.substring(currentStringStart, currentStringEnd);
         }
         
         // scan for links
@@ -647,7 +651,6 @@ class MarkdownParser extends Transform {
                         // was not html
                         
                         // correct and escape the <
-                        this.currentString = this.currentString.substring(0, this.currentString.length - 1);
                         this._selfBuffer(escapeHtml(`<`));
                         this._selfBuffer(c);
 
@@ -717,7 +720,7 @@ class MarkdownParser extends Transform {
                             } else if (c === `>`) {
                                 this.state = STATE.QUOTE;
                                 this.iAdjust += 1;
-                                this.currentString = this.currentString.substr(1);
+                                this.skipStart += 1;
                             }  else if (c === `\``) {
                                 this.state = STATE.START_RAW;
                                 this.backTicks = 1;
@@ -781,10 +784,10 @@ class MarkdownParser extends Transform {
                             this.state = STATE.LIST_ITEM_TEXT;
                             if (!this.items.length) {
                                 this.iAdjust = i;
-                                this.currentString = this.currentString.substr(3);
+                                this.skipStart += 3;
                             } else {
                                 this.iAdjust = i+1;
-                                this.currentString = this.currentString.substr(1);
+                                this.skipStart += 1;
                             }
                         } else {
                             // force go loop to go again with current character
@@ -799,10 +802,12 @@ class MarkdownParser extends Transform {
                         this.state = STATE.LIST_ITEM_TEXT;
                         if (!this.items.length) {
                             this.iAdjust = i;
-                            this.currentString = this.currentString.substr(2);
+                            
+                            this.skipStart += 2;
                         } else {
                             this.iAdjust = i+1;
-                            this.currentString = this.currentString.substr(1);
+                            
+                            this.skipStart += 1;
                         }
                     } else {
                         if (c === `-`) {
@@ -857,8 +862,7 @@ class MarkdownParser extends Transform {
                         this.titleLevel += 1;
                     } else if (isWhitespace(c)) {
                         this.state = STATE.TITLE_TEXT;
-                        this.iAdjust += this.titleLevel + this.skipStart;
-                        this.currentString = this.currentString.substr(this.titleLevel + this.skipStart);
+                        this.skipStart += this.titleLevel + 1;
                     } else {
                         //malformed title
                         this.state = STATE.TEXT;
