@@ -563,7 +563,7 @@ class MarkdownParser extends Transform {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
                 
-                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3).trim();
+                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3-this.iAdjust).trim();
                 let currentInlineString;
                 
                 let highlighted;
@@ -887,7 +887,7 @@ class MarkdownParser extends Transform {
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
                         this.rawDescription = this.currentString.substring(this.rawDescriptionStart, i);
-                        this.rawDescriptionEnd = i+1;
+                        this.rawDescriptionEnd = i+1-this.iAdjust;
                         this.state = STATE.RAW;
                     } else if (!isAsciiLetter(c)) {
                         // not in the description but in the raw text all along
