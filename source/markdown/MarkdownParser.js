@@ -95,7 +95,6 @@ class MarkdownParser extends Transform {
         this.items = [];
         this.listTypeOrdered = [];
         this.currentString = ``;
-        this.iAdjust = 0;
     }
 
     _refresh() {
@@ -563,7 +562,7 @@ class MarkdownParser extends Transform {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
                 
-                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3-this.iAdjust).trim();
+                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3).trim();
                 let currentInlineString;
                 
                 let highlighted;
@@ -586,13 +585,7 @@ class MarkdownParser extends Transform {
             default:
                 return;
             
-        }
-
-        if (skip) {
-            i += skip;    
-        }
-        this.iAdjust = i+1;
-        this.currentString = this.currentString.substr(i);
+        }        
     }
 
     _noteWorthyCharacters(c, i) {
@@ -616,6 +609,9 @@ class MarkdownParser extends Transform {
         const asString = this.currentString;
         const { length } = asString;
         const toPush = []; // avoid pushing character by character
+        let iAdjust = 0; // as we cut off the beginning of this.currentString, i has to be adjusted
+        let rawStartedAt = 0;
+        let rawDescriptionStart = 0;
 
         for (let i = 0; i < length; i += 1) {
             let c = asString[i];
@@ -627,21 +623,28 @@ class MarkdownParser extends Transform {
                     this.closingBackTicks += 1;
                     continue;
                 } else {
-                    this._closeCurrent(toPush, i);
+                    this._closeCurrent(toPush, i - iAdjust);
+                    this.currentString = this.currentString.substr(i);
+                    iAdjust = i + 1;
+                    this._refresh();
                 }
             }
             switch (this.state) {
                 case STATE.UNDERTITLE1:
                 case STATE.UNDERTITLE2:
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i);
+                        this._closeCurrent(toPush, i - iAdjust);
+                        this.currentString = this.currentString.substr(i);
+                        iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i);
+                        this._closeCurrent(toPush, i - iAdjust);
+                        this.currentString = this.currentString.substr(i);
+                        iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
                     }
@@ -656,11 +659,11 @@ class MarkdownParser extends Transform {
 
                     } else if (c === `>`) {
                         let currentTagName = ``;
-                        for (let i = 1; i < this.currentString.length; i += 1) {
-                            if (!isAsciiLetter(this.currentString[i]) && this.currentString[i] !== `-`) {
+                        for (let i = 1; i < asString.length; i += 1) {
+                            if (!isAsciiLetter(asString[i]) && asString[i] !== `-`) {
                                 break;
                             }
-                            currentTagName = `${currentTagName}${this.currentString[i]}`;
+                            currentTagName = `${currentTagName}${asString[i]}`;
                         }
                         this._selfBuffer(c);
                         if (emptyElements.includes(currentTagName)) {
@@ -694,7 +697,9 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         this.skipStart += 1;
                         if (this.newLined) {
-                            this._closeCurrent(toPush, i);
+                            this._closeCurrent(toPush, i - iAdjust);
+                            this.currentString = this.currentString.substr(i);
+                            iAdjust = i + 1;
                         } else {
                             this.newLined = true;
                         }
@@ -724,7 +729,7 @@ class MarkdownParser extends Transform {
                             }  else if (c === `\``) {
                                 this.state = STATE.START_RAW;
                                 this.backTicks = 1;
-                                this.rawStartedAt = i;
+                                rawStartedAt = i;
                             } else if (isWhitespace(c)) {
                                 this.skipStart += 1
                             } else {
@@ -735,7 +740,7 @@ class MarkdownParser extends Transform {
                                 }
                                 this.firstCharcater = false
                                 
-                                if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
+                                if (this._noteWorthyCharacters(c, i - iAdjust)) {
                                     this.firstCharcater = false;
                                     continue;
                                 }
@@ -746,7 +751,7 @@ class MarkdownParser extends Transform {
                                 // this._selfBuffer(` `); // todo
                                 this.newLined = false;
                             }
-                            if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
+                            if (this._noteWorthyCharacters(c, i - iAdjust)) {
                                 this.firstCharcater = false;
                                 continue;
                             }
@@ -759,7 +764,9 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this._closeCurrent(toPush, i-1);
+                            this._closeCurrent(toPush, i - iAdjust - 1);
+                            this.currentString = this.currentString.substr(i-1);
+                            iAdjust = i;
                         } else {
                             this.newLined = true;
                         }
@@ -775,6 +782,7 @@ class MarkdownParser extends Transform {
                             this.lastCharacter = c;
                         } else {
                             // force go loop to go again with current character
+                            // todo avoid infinite loop
                             i -= 1;
                             this.state = STATE.TEXT;
                         }
@@ -783,10 +791,10 @@ class MarkdownParser extends Transform {
                             this.listTypeOrdered.push(true);
                             this.state = STATE.LIST_ITEM_TEXT;
                             if (!this.items.length) {
-                                this.iAdjust = i;
+                                iAdjust = i;
                                 this.skipStart += 3;
                             } else {
-                                this.iAdjust = i+1;
+                                iAdjust = i+1;
                                 this.skipStart += 1;
                             }
                         } else {
@@ -801,11 +809,11 @@ class MarkdownParser extends Transform {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
                         if (!this.items.length) {
-                            this.iAdjust = i;
+                            iAdjust = i;
                             
                             this.skipStart += 2;
                         } else {
-                            this.iAdjust = i+1;
+                            iAdjust = i+1;
                             
                             this.skipStart += 1;
                         }
@@ -830,11 +838,11 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
-                        const inlineOutput = this._closeInlineStuff(0, i - 1).trim()
+                        const inlineOutput = this._closeInlineStuff(0, i - iAdjust - 1).trim()
                         this.items.push(inlineOutput);
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
-                        this.iAdjust = i+1;
+                        iAdjust = i+1;
                         this.currentString = this.currentString.substr(i+1);
                     }
                     break;
@@ -843,12 +851,16 @@ class MarkdownParser extends Transform {
                         continue;
                     }
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i);
+                        this._closeCurrent(toPush, i - iAdjust);
+                        this.currentString = this.currentString.substr(i);
+                        iAdjust = i + 1;
                     }
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i);
+                        this._closeCurrent(toPush, i - iAdjust);
+                        this.currentString = this.currentString.substr(i);
+                        iAdjust = i + 1;
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
@@ -874,11 +886,11 @@ class MarkdownParser extends Transform {
                         this.backTicks += 1;
                         if (this.backTicks === 3) {
                             this.state = STATE.RAW_DESCRIPTION;
-                            this.rawDescriptionStart = i+1;
+                            rawDescriptionStart = i+1;
                         } 
                     } else {
-                        for (let q = this.rawStartedAt; q < i; q+=1) {
-                            this.indexes.push({c: `\``, i: q});
+                        for (let q = rawStartedAt; q < i; q+=1) {
+                            this.indexes.push({c: `\``, i: q - iAdjust});
                         }
                         this.state = STATE.TEXT;
                         this.backTicks = 0;
@@ -886,13 +898,13 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
-                        this.rawDescription = this.currentString.substring(this.rawDescriptionStart, i);
+                        this.rawDescription = asString.substring(rawDescriptionStart, i);
                         this.rawDescriptionEnd = i+1-this.iAdjust;
                         this.state = STATE.RAW;
                     } else if (!isAsciiLetter(c)) {
                         // not in the description but in the raw text all along
-                        for (let q = this.rawStartedAt; q < this.rawStartedAt + 3; q+=1) {
-                            this.indexes.push({c: `\``, i: q});
+                        for (let q = rawStartedAt; q < rawStartedAt + 3; q+=1) {
+                            this.indexes.push({c: `\``, i: q - iAdjust});
                         }
                         this.state = STATE.TEXT;
                         this.backTicks = 0;
