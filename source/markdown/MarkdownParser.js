@@ -623,9 +623,9 @@ class MarkdownParser extends Transform {
                     this.closingBackTicks += 1;
                     continue;
                 } else {
-                    this._closeCurrent(toPush, i - iAdjust);
-                    this.currentString = this.currentString.substr(i);
-                    iAdjust = i + 1;
+                    this._closeCurrent(toPush, i - iAdjust+1);
+                    this.currentString = this.currentString.substr(i - iAdjust + 1);
+                    iAdjust = i;
                     this._refresh();
                 }
             }
@@ -634,7 +634,7 @@ class MarkdownParser extends Transform {
                 case STATE.UNDERTITLE2:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i);
+                        this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
@@ -643,7 +643,7 @@ class MarkdownParser extends Transform {
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i);
+                        this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
@@ -698,7 +698,7 @@ class MarkdownParser extends Transform {
                         this.skipStart += 1;
                         if (this.newLined) {
                             this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = this.currentString.substr(i);
+                            this.currentString = this.currentString.substr(i - iAdjust + 1);
                             iAdjust = i + 1;
                         } else {
                             this.newLined = true;
@@ -765,7 +765,7 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush, i - iAdjust - 1);
-                            this.currentString = this.currentString.substr(i-1);
+                            this.currentString = this.currentString.substr(i-1 - iAdjust);
                             iAdjust = i;
                         } else {
                             this.newLined = true;
@@ -842,8 +842,8 @@ class MarkdownParser extends Transform {
                         this.items.push(inlineOutput);
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
+                        this.currentString = this.currentString.substr(i+1 - iAdjust);
                         iAdjust = i+1;
-                        this.currentString = this.currentString.substr(i+1);
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -852,14 +852,14 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i);
+                        this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
                     }
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i);
+                        this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
                     } else if (isWhitespace(c)) {
                     } else if (c === `-` || c === `*`) {
@@ -899,7 +899,7 @@ class MarkdownParser extends Transform {
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
                         this.rawDescription = asString.substring(rawDescriptionStart, i);
-                        this.rawDescriptionEnd = i+1-this.iAdjust;
+                        this.rawDescriptionEnd = i+1-iAdjust;
                         this.state = STATE.RAW;
                     } else if (!isAsciiLetter(c)) {
                         // not in the description but in the raw text all along
