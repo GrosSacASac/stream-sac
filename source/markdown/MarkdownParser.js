@@ -724,7 +724,7 @@ class MarkdownParser extends Transform {
                                 this.lastCharacter = c;
                             } else if (c === `>`) {
                                 this.state = STATE.QUOTE;
-                                this.iAdjust += 1;
+                                iAdjust += 1;
                                 this.skipStart += 1;
                             }  else if (c === `\``) {
                                 this.state = STATE.START_RAW;
@@ -759,7 +759,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.QUOTE:
-                    if (this._noteWorthyCharacters(c, toPush)) {
+                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
                         continue;
                     }
                     if (c === `\n`) {
@@ -824,7 +824,7 @@ class MarkdownParser extends Transform {
                             this.skipEnd = 2;
                         } else {
                             // revert 
-                            this.indexes.push({c: this.lastCharacter,i: i-1 - this.iAdjust});
+                            this.indexes.push({c: this.lastCharacter,i: i-1 - iAdjust});
                             // force go loop to go again with current character
                             i -= 1;
                             this.state = STATE.TEXT;
@@ -832,7 +832,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.LIST_ITEM_TEXT:
-                    if (this._noteWorthyCharacters(c, i - this.iAdjust)) {
+                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
                         continue;
                     }
                     if (c === `\n`) {
@@ -847,7 +847,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 case STATE.TITLE_TEXT:
-                    if (this._noteWorthyCharacters(c, toPush)) {
+                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
                         continue;
                     }
                     if (c === `\n`) {
