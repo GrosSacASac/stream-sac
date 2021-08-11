@@ -936,22 +936,12 @@ class MarkdownParser extends Transform {
         return buffer.length;
     }
 
-    _closeAllPrevious(toPush) {
-        this._closeCurrent(toPush);
-        while (this.inside.length) {
-            this.state = this.inside.pop();
-            this._closeCurrent(toPush);
-        }
-    }
     _flush(done) {
         const toPush = [];
-        this._closeAllPrevious(toPush);
+        this._closeCurrent(toPush);
         toPush.forEach(string => {
             this.push(string);
         });
-        if (this.currentString) {
-            this.push(this.currentString);
-        }
         this._refresh();
         done();
     }
