@@ -695,12 +695,13 @@ class MarkdownParser extends Transform {
 
                 case STATE.TEXT:
                     if (c === `\n`) {
-                        this.skipStart += 1;
                         if (this.newLined) {
+                            this.skipStart -= 1;
                             this._closeCurrent(toPush, i - iAdjust);
                             this.currentString = this.currentString.substr(i - iAdjust + 1);
                             iAdjust = i + 1;
                         } else {
+                            this.skipStart += 1;
                             this.newLined = true;
                         }
                     } else if (c === `=` && this.newLined) {
