@@ -632,12 +632,11 @@ class MarkdownParser extends Transform {
             switch (this.state) {
                 case STATE.UNDERTITLE1:
                 case STATE.UNDERTITLE2:
+                    this.skipEnd += 1;
                     if (c === `\n`) {
-                        this._closeCurrent(toPush, i - iAdjust);
+                        this._closeCurrent(toPush, i - iAdjust + 1);
                         this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
-                    } else {
-                        this.skipEnd += 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
@@ -706,6 +705,7 @@ class MarkdownParser extends Transform {
                         }
                     } else if (c === `=` && this.newLined) {
                         this.state = STATE.UNDERTITLE1;
+                        this.skipStart -= 1;
                         this.titleLevel = 1;
                         this.skipEnd = 1;
                     } else if (c === `-` && this.newLined) {
