@@ -765,8 +765,8 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this._closeCurrent(toPush, i - iAdjust - 1);
-                            this.currentString = this.currentString.substr(i-1 - iAdjust);
+                            this._closeCurrent(toPush, i - iAdjust);
+                            this.currentString = this.currentString.substr(i - iAdjust);
                             iAdjust = i;
                         } else {
                             this.newLined = true;
