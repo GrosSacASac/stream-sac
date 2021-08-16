@@ -340,7 +340,7 @@ class MarkdownParser extends Transform {
                                 htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
                                     this.currentString.substring(this.indexes[colon].i+2, currentStringEnd).trim()
                                 )}">${
-                                    this.currentString.substring(i+2, closingPosition+1)
+                                    this.currentString.substring(i+1, closingPosition)
                                 }</a>`;
                                 j = end;
                                 lastUsed = currentStringEnd
