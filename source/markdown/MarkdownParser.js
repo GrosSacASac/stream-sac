@@ -710,6 +710,7 @@ class MarkdownParser extends Transform {
                         this.skipEnd = 1;
                     } else if (c === `-` && this.newLined) {
                         this.state = STATE.UNDERTITLE2;
+                        this.skipStart -= 1;
                         this.titleLevel = 2;
                         this.skipEnd = 1;
                     } else {
