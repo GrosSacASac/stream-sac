@@ -122,7 +122,7 @@ class MarkdownParser extends Transform {
             currentStringStart += this.skipStart;
             this.skipStart = 0;
         }
-        if (!this.indexes.length) {
+        if (!this.indexes.length || start === end) {
             return this.currentString.substring(currentStringStart, currentStringEnd);
         }
         
