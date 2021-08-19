@@ -422,8 +422,8 @@ class MarkdownParser extends Transform {
                         this.indexes[nextStar].u = true;
                         htmlOutput = `${htmlOutput}<em>${
                             replaceThings(this._closeInlineStuff(
-                                i+1,
-                                this.indexes[nextStar].i,
+                                i+1+currentStringStart,
+                                this.indexes[nextStar].i+currentStringStart,
                                 j+1,
                                 nextStar,
                             ), links)}</em>`;
@@ -625,7 +625,7 @@ class MarkdownParser extends Transform {
                     continue;
                 } else {
                     this._closeCurrent(toPush, i - iAdjust+1);
-                    this.currentString = this.currentString.substr(i - iAdjust + 1);
+                    this.currentString = asString.substr(i);
                     iAdjust = i;
                     this._refresh();
                 }
@@ -636,14 +636,14 @@ class MarkdownParser extends Transform {
                     this.skipEnd += 1;
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust + 1);
-                        this.currentString = this.currentString.substr(i - iAdjust);
+                        this.currentString = asString.substr(i+1);
                         iAdjust = i + 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i - iAdjust);
+                        this.currentString = asString.substr(i+1);
                         iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
@@ -698,7 +698,7 @@ class MarkdownParser extends Transform {
                         if (this.newLined) {
                             this.skipStart -= 1;
                             this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = this.currentString.substr(i - iAdjust + 1);
+                            this.currentString = asString.substr(i+1);
                             iAdjust = i + 1;
                         } else {
                             this.skipStart += 1;
@@ -768,8 +768,8 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = this.currentString.substr(i - iAdjust);
-                            iAdjust = i;
+                            this.currentString = asString.substr(i+1);
+                            iAdjust = i+1;
                         } else {
                             this.newLined = true;
                         }
@@ -812,13 +812,13 @@ class MarkdownParser extends Transform {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
                         if (!this.items.length) {
-                            iAdjust = i;
+                            iAdjust = i+1;
                             
                             this.skipStart += 2;
                         } else {
                             iAdjust = i+1;
                             
-                            this.skipStart += 1;
+                            this.skipStart += 2;
                         }
                     } else {
                         if (c === `-`) {
@@ -841,12 +841,13 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
-                        const inlineOutput = this._closeInlineStuff(0, i).trim();
+                        const skipStart = this.skipStart;
+                        const inlineOutput = this._closeInlineStuff(0, i-iAdjust+this.skipStart).trim();
                         this.items.push(inlineOutput);
-                        this._refresh();
                         this.state = STATE.LIST_ITEM_END;
-                        this.currentString = this.currentString.substr(i+1);
+                        this.currentString = asString.substr(i+1);
                         iAdjust = i+1;
+                        this._refresh();
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -855,14 +856,14 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i - iAdjust);
+                        this.currentString = asString.substr(i+1);
                         iAdjust = i + 1;
                     }
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = this.currentString.substr(i - iAdjust);
+                        this.currentString = asString.substr(i+1);
                         iAdjust = i + 1;
                     } else if (isWhitespace(c)) {
                         this.skipStart += 1;
