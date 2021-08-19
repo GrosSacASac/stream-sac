@@ -748,7 +748,6 @@ class MarkdownParser extends Transform {
                                 this.firstCharcater = false
                                 
                                 if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                                    this.firstCharcater = false;
                                     continue;
                                 }
                             }
