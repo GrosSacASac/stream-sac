@@ -304,16 +304,16 @@ class MarkdownParser extends Transform {
                             // regular link
                             this.indexes[closingIndex].u = true;
                             htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
-                                this.currentString.substring(this.indexes[openingParenthese].i+1, this.indexes[closingParenthese].i)
+                                this.currentString.substring(this.indexes[openingParenthese].i+currentStringStart, this.indexes[closingParenthese].i+currentStringStart-1)
                             )}">${
                                 this._closeInlineStuff(
-                                    i+1,
-                                    this.indexes[closingIndex].i,
+                                    i+currentStringStart,
+                                    this.indexes[closingIndex].i+currentStringStart-1,
                                     j+1,
                                     closingIndex,
                             )}</a>`;
                             j = closingParenthese;
-                            lastUsed = this.indexes[closingParenthese].i+1
+                            lastUsed = this.indexes[closingParenthese].i;
                         }
                     } else {
                         const openingBracket = findClosingSimple(closingIndex+1, `[`);
@@ -499,7 +499,7 @@ class MarkdownParser extends Transform {
             } else if (false) {
             }
         }        
-        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, currentStringEnd)), links)}`;
+        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed+currentStringStart, Math.max(currentStringEnd, lastUsed+currentStringStart))), links)}`;
         
     }
 
@@ -841,11 +841,11 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
-                        const inlineOutput = this._closeInlineStuff(0, i - iAdjust - 1).trim()
+                        const inlineOutput = this._closeInlineStuff(0, i).trim();
                         this.items.push(inlineOutput);
                         this._refresh();
                         this.state = STATE.LIST_ITEM_END;
-                        this.currentString = this.currentString.substr(i+1 - iAdjust);
+                        this.currentString = this.currentString.substr(i+1);
                         iAdjust = i+1;
                     }
                     break;
@@ -865,8 +865,10 @@ class MarkdownParser extends Transform {
                         this.currentString = this.currentString.substr(i - iAdjust);
                         iAdjust = i + 1;
                     } else if (isWhitespace(c)) {
+                        this.skipStart += 1;
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
+                        this.skipStart += 1;
                     } else if (Number.isFinite(Number(c))) {
                         this.state = STATE.ORDERED_LIST_START;
                         this.lastCharacter = c;
