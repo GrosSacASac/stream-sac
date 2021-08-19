@@ -258,6 +258,25 @@ test(`link in the middle of text`, async t => {
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
 });
 
+test(`em in the middle of list items`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+ - ${outside}*${b}*${outside}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}</ul>`));
+});
+
 test(`link in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://surge.sh/`
