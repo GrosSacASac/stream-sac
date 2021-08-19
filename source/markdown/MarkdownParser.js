@@ -704,12 +704,16 @@ class MarkdownParser extends Transform {
                             this.skipStart += 1;
                             this.newLined = true;
                         }
-                    } else if (c === `=` && this.newLined) {
+                    } else if (c === `=` && this.newLined &&
+                    // avoid empty titles
+                    !this.firstCharcater) {
                         this.state = STATE.UNDERTITLE1;
                         this.skipStart -= 1;
                         this.titleLevel = 1;
                         this.skipEnd = 1;
-                    } else if (c === `-` && this.newLined) {
+                    } else if (c === `-` && this.newLined &&
+                        // avoid empty titles
+                        !this.firstCharcater) {
                         this.state = STATE.UNDERTITLE2;
                         this.skipStart -= 1;
                         this.titleLevel = 2;
