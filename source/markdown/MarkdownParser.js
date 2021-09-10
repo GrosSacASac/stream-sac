@@ -181,7 +181,7 @@ class MarkdownParser extends Transform {
         let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
         if (this.indexes[start]?.i !== 0) {
             // substring does weird things if end is smaller than start
-            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, lastUsed + currentStringStart)), links)}`;
+            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart) )), links)}`;
         }
         let j;
         const nextCharacter = () => {
