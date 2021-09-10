@@ -417,6 +417,7 @@ class MarkdownParser extends Transform {
                         j += 1;
                     }
                 } else {
+                    // emphasis
                     const nextStar = findClosingSimple(j+1, `*`);
                     if (nextStar) {
                         this.indexes[nextStar].u = true;
