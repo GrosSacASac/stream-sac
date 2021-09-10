@@ -325,23 +325,23 @@ class MarkdownParser extends Transform {
                                 const slug = slugify(this.currentString.substring(this.indexes[openingBracket].i+1, this.indexes[closingBracket].i));
                                 htmlOutput = `${htmlOutput}<a href="#${slug}">${
                                     this._closeInlineStuff(
-                                        i+1,
-                                        this.indexes[closingIndex].i,
+                                        i+1+currentStringStart,
+                                        this.indexes[closingIndex].i+currentStringStart,
                                         j+1,
                                         closingIndex,
                                 )}</a>`;
                                 j = closingBracket;
-                                lastUsed = this.indexes[closingBracket].i+1
+                                lastUsed = this.indexes[closingBracket].i+1+currentStringStart
                             }
                         } else {
                             // reference from a previous link
                             const colon = findClosingSimple(closingIndex+1, `:`);
                             if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
-                                const slug = slugify(this.currentString.substring(i+1, closingPosition+1));
+                                const slug = slugify(this.currentString.substring(i+1, closingPosition+1+currentStringStart));
                                 htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
-                                    this.currentString.substring(this.indexes[colon].i+2, currentStringEnd).trim()
+                                    this.currentString.substring(this.indexes[colon].i+2+currentStringStart, currentStringEnd).trim()
                                 )}">${
-                                    this.currentString.substring(i+1, closingPosition)
+                                    this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart)
                                 }</a>`;
                                 j = end;
                                 lastUsed = currentStringEnd
@@ -349,12 +349,12 @@ class MarkdownParser extends Transform {
                             } else {
                                 // reference link with only text
                                 this.indexes[closingIndex].u = true;
-                                const slug = slugify(this.currentString.substring(i+1, closingPosition));
+                                const slug = slugify(this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart));
                                 htmlOutput = `${htmlOutput}<a href="#${slug}">${
-                                    this.currentString.substring(i+1, closingPosition)
+                                    this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart)
                                 }</a>`;
                                 j = closingIndex;
-                                lastUsed = closingPosition+1
+                                lastUsed = closingPosition+1+currentStringStart
                             }
                         }
                     }
@@ -375,10 +375,10 @@ class MarkdownParser extends Transform {
                             if (closingParenthese !== undefined) {
                                 // regular image
                                 this.indexes[closingIndex].u = true;
-                                const src = this.currentString.substring(this.indexes[openingParenthese].i+1, this.indexes[closingParenthese].i);
+                                const src = this.currentString.substring(this.indexes[openingParenthese].i+1+currentStringStart, this.indexes[closingParenthese].i+currentStringStart);
                                 const alt = this._closeInlineStuff(
-                                    this.indexes[openingBracketIndex].i+1,
-                                    this.indexes[closingIndex].i,
+                                    this.indexes[openingBracketIndex].i+1+currentStringStart,
+                                    this.indexes[closingIndex].i+currentStringStart,
                                     j+2,
                                     closingIndex,
                                 );
@@ -390,7 +390,7 @@ class MarkdownParser extends Transform {
                                 }
                                 htmlOutput = `${htmlOutput}${output}`;
                                 j = closingParenthese;
-                                lastUsed = this.indexes[closingParenthese].i+1
+                                lastUsed = this.indexes[closingParenthese].i+1+currentStringStart
                             }
                         }
                     }
@@ -408,13 +408,13 @@ class MarkdownParser extends Transform {
                         this.indexes[closingPairIndex+1].u = true;
                         htmlOutput = `${htmlOutput}<strong>${
                             replaceThings(this._closeInlineStuff(
-                                nextIndex()+1,
-                                this.indexes[closingPairIndex].i,
+                                nextIndex()+1+currentStringStart,
+                                this.indexes[closingPairIndex].i+currentStringStart,
                                 j+2,
                                 closingPairIndex,
                             ), links)}</strong>`;
                         j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i+2
+                        lastUsed = this.indexes[closingPairIndex].i+2+currentStringStart
                     } else {
                         j += 1;
                     }
@@ -431,7 +431,7 @@ class MarkdownParser extends Transform {
                                 nextStar,
                             ), links)}</em>`;
                         j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i+1;
+                        lastUsed = this.indexes[nextStar].i+1+currentStringStart;
                     } 
                 }
             } else if (c === `_`) {
@@ -445,13 +445,13 @@ class MarkdownParser extends Transform {
                         this.indexes[closingPairIndex+1].u = true;
                         htmlOutput = `${htmlOutput}<strong>${
                             replaceThings(this._closeInlineStuff(
-                                nextIndex()+1,
-                                this.indexes[closingPairIndex].i,
+                                nextIndex()+1+currentStringStart,
+                                this.indexes[closingPairIndex].i+currentStringStart,
                                 j+2,
                                 closingPairIndex,
                             ), links)}</strong>`;
                         j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i+2
+                        lastUsed = this.indexes[closingPairIndex].i+2+currentStringStart
                     } else {
                         j += 1;
                     }
@@ -461,13 +461,13 @@ class MarkdownParser extends Transform {
                         this.indexes[nextStar].u = true;
                         htmlOutput = `${htmlOutput}<em>${
                             replaceThings(this._closeInlineStuff(
-                                i+1,
-                                this.indexes[nextStar].i,
+                                i+1+currentStringStart,
+                                this.indexes[nextStar].i+currentStringStart,
                                 j+1,
                                 nextStar,
                             ), links)}</em>`;
                         j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i+1;
+                        lastUsed = this.indexes[nextStar].i+1+currentStringStart;
                     } 
                 }
             } else if (c === `\``) {
@@ -480,10 +480,10 @@ class MarkdownParser extends Transform {
                         this.indexes[startOfTripleClosing+2].u = true;
                         this.indexes[startOfTripleClosing+1].u = true;
                         htmlOutput = `${htmlOutput}<code>${
-                            escapeHtml(this.currentString.substring(i+3,this.indexes[startOfTripleClosing].i))
+                            escapeHtml(this.currentString.substring(i+3+currentStringStart,this.indexes[startOfTripleClosing].i+currentStringStart))
                         }</code>`;
                         j = startOfTripleClosing + 3;
-                        lastUsed = this.indexes[startOfTripleClosing].i+3;
+                        lastUsed = this.indexes[startOfTripleClosing].i+3+currentStringStart;
                         wastriplebacktick = true;
                     }
                 }
@@ -493,10 +493,10 @@ class MarkdownParser extends Transform {
                         //raw
                         this.indexes[nextBackTick].u = true;
                         htmlOutput = `${htmlOutput}<code>${
-                            escapeHtml(this.currentString.substring(i+1,this.indexes[nextBackTick].i))
+                            escapeHtml(this.currentString.substring(i+1+currentStringStart,this.indexes[nextBackTick].i+currentStringStart))
                         }</code>`;
                         j = nextBackTick + 1;
-                        lastUsed = this.indexes[nextBackTick].i+1;
+                        lastUsed = this.indexes[nextBackTick].i+1+currentStringStart;
                     }
                 }
             } else if (false) {
