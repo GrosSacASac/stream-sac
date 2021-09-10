@@ -39,7 +39,6 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
-
 test(`quote`, async t => {
     const markdownParser = new MarkdownParser();
     const quote = `An eye for an eye leaves the whole world blind`
@@ -56,6 +55,10 @@ ${author}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
 });
 
+// test(`inline quote`, async t => {
+//     // is this even possible in markdown ?
+//     <q></q>
+// });
 
 test(`streaming cut in half`, async t => {
     const markdownParser = new MarkdownParser();
@@ -209,6 +212,7 @@ test(`reference link with only text`, async t => {
     // t.is(forceBuffer, (`<p><a href="${linkTarget}">${linkText}</a></p>`));
 });
 
+
 test(`auto detect link`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://gitlab.com/GrosSacASac/blog-engine-z/`;
@@ -252,6 +256,25 @@ test(`link in the middle of text`, async t => {
     await finished(markdownParser);
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
+});
+
+test(`em in the middle of list items`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+ - ${outside}*${b}*${outside}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}</ul>`));
 });
 
 test(`link in the middle of list items`, async t => {
