@@ -766,7 +766,7 @@ test(`link inside emphasis alternative syntax`, async t => {
 });
 
 
-test(`link inside unordered list`, async t => {
+test(`link inside ordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`
     const linkText = `example`
