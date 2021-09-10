@@ -304,16 +304,16 @@ class MarkdownParser extends Transform {
                             // regular link
                             this.indexes[closingIndex].u = true;
                             htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
-                                this.currentString.substring(this.indexes[openingParenthese].i+currentStringStart, this.indexes[closingParenthese].i+currentStringStart-1)
+                                this.currentString.substring(this.indexes[openingParenthese].i+currentStringStart+1, this.indexes[closingParenthese].i+currentStringStart)
                             )}">${
                                 this._closeInlineStuff(
-                                    i+currentStringStart,
-                                    this.indexes[closingIndex].i+currentStringStart-1,
+                                    i+currentStringStart+1,
+                                    this.indexes[closingIndex].i+currentStringStart,
                                     j+1,
                                     closingIndex,
                             )}</a>`;
                             j = closingParenthese;
-                            lastUsed = this.indexes[closingParenthese].i;
+                            lastUsed = this.indexes[closingParenthese].i+1;
                         }
                     } else {
                         const openingBracket = findClosingSimple(closingIndex+1, `[`);
