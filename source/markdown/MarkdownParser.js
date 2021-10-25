@@ -179,7 +179,7 @@ class MarkdownParser extends Transform {
         removeIndexesInsideLinks(this.indexes, links);
         let htmlOutput = ``;
         let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
-        if (this.indexes[start]?.i !== 0) {
+        if (lastUsed > currentStringStart) {
             // substring does weird things if end is smaller than start
             htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart) )), links)}`;
         }
