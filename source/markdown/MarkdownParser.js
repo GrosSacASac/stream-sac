@@ -427,13 +427,13 @@ class MarkdownParser extends Transform {
                         this.indexes[nextStar].u = true;
                         htmlOutput = `${htmlOutput}<em>${
                             replaceThings(this._closeInlineStuff(
-                                i+1+currentStringStart,
-                                this.indexes[nextStar].i+currentStringStart,
+                                i+1,
+                                this.indexes[nextStar].i,
                                 j+1,
                                 nextStar,
                             ), links)}</em>`;
                         j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i+1+currentStringStart;
+                        lastUsed = this.indexes[nextStar].i+1;
                     } 
                 }
             } else if (c === `_`) {
@@ -504,7 +504,7 @@ class MarkdownParser extends Transform {
             } else if (false) {
             }
         }        
-        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed+currentStringStart, Math.max(currentStringEnd, lastUsed+currentStringStart))), links)}`;
+        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, Math.max(currentStringEnd))), links)}`;
         
     }
 
@@ -820,13 +820,13 @@ class MarkdownParser extends Transform {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
                         if (!this.items.length) {
-                            iAdjust = i+1;
+                            iAdjust = i-2;
                             
                             this.skipStart += 2;
                         } else {
-                            iAdjust = i+1;
+                            iAdjust = i-2;
                             
-                            this.skipStart += 2;
+                            this.skipStart += 1;
                         }
                     } else {
                         if (c === `-`) {
@@ -850,12 +850,12 @@ class MarkdownParser extends Transform {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
                         const skipStart = this.skipStart;
-                        const inlineOutput = this._closeInlineStuff(0, i-iAdjust+this.skipStart).trim();
+                        const inlineOutput = this._closeInlineStuff(0, i-iAdjust).trim();
                         this.items.push(inlineOutput);
-                        this.state = STATE.LIST_ITEM_END;
                         this.currentString = asString.substr(i+1);
-                        iAdjust = i+1;
+                        iAdjust = i+1 + skipStart;
                         this._refresh();
+                        this.state = STATE.LIST_ITEM_END;
                     }
                     break;
                 case STATE.TITLE_TEXT:
