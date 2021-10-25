@@ -86,6 +86,56 @@ const DEFAULT_OPTIONS = {
     mediaHook: undefined,
 };
 
+// scan for links
+// remove special characters found inside links
+// parse markdown with special characters left
+// plaintext replace detected link with actual links (done inside parsing to avoid messing up reference links)
+const scanForLinks = (plainText, start, stop) => {
+    const words = plainText.split(` `);
+    return words.reduce((links, word) => {
+        if (word.startsWith("https://") || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
+            const index= plainText.indexOf(word);
+            const indexEnd= index + word.length;
+            if (index >= start && indexEnd <= stop) {
+                links.push({
+                    i: index,
+                    iEnd: indexEnd,
+                    original: word,
+                    replacement: `<a href="${word}">${word}</a>`,
+                });
+            }
+        }
+        return links;
+    }, []);
+};
+
+const removeIndexesInsideLinks = (indexes, links) => {
+    let indexesI = 0;
+    let linksI = 0;
+    let position = 0;
+    while (linksI < links.length && indexesI < indexes.length) {
+        const link = links[linksI];
+        while (position !== undefined && position < link.iEnd) {
+            const index = indexes[indexesI];
+            position = index?.i;
+            if (position !== undefined && position >= link.i && position <= link.iEnd) {
+                // inside a link remove
+                indexes.splice(indexesI, 1);
+                end -= 1;
+            } else {
+                indexesI += 1;
+            }
+        }
+        linksI += 1;
+    }
+}
+const replaceThings = (text, links) => {
+    links.forEach(({original, replacement}) => {
+        text = text.replace(original, replacement);
+    });
+    return text;
+};
+
 class MarkdownParser extends Transform {
     constructor(options = {}) {
         super({ readableObjectMode: true });
@@ -126,55 +176,7 @@ class MarkdownParser extends Transform {
             return this.currentString.substring(currentStringStart, currentStringEnd);
         }
         
-        // scan for links
-        // remove special characters found inside links
-        // parse markdown with special characters left
-        // plaintext replace detected link with actual links (done inside parsing to avoid messing up reference links)
-        const scanForLinks = (plainText, start, stop) => {
-            const words = plainText.split(` `);
-            return words.reduce((links, word) => {
-                if (word.startsWith("https://") || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
-                    const index= plainText.indexOf(word);
-                    const indexEnd= index + word.length;
-                    if (index >= start && indexEnd <= stop) {
-                        links.push({
-                            i: index,
-                            iEnd: indexEnd,
-                            original: word,
-                            replacement: `<a href="${word}">${word}</a>`,
-                        });
-                    }
-                }
-                return links;
-            }, []);
-        };
 
-        const removeIndexesInsideLinks = (indexes, links) => {
-            let indexesI = 0;
-            let linksI = 0;
-            let position = 0;
-            while (linksI < links.length && indexesI < indexes.length) {
-                const link = links[linksI];
-                while (position !== undefined && position < link.iEnd) {
-                    const index = indexes[indexesI];
-                    position = index?.i;
-                    if (position !== undefined && position >= link.i && position <= link.iEnd) {
-                        // inside a link remove
-                        indexes.splice(indexesI, 1);
-                        end -= 1;
-                    } else {
-                        indexesI += 1;
-                    }
-                }
-                linksI += 1;
-            }
-        }
-        const replaceThings = (text, links) => {
-            links.forEach(({original, replacement}) => {
-                text = text.replace(original, replacement);
-            });
-            return text;
-        };
         const links = scanForLinks(this.currentString, currentStringStart, currentStringEnd);
         removeIndexesInsideLinks(this.indexes, links);
         let htmlOutput = ``;
