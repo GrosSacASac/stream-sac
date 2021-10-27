@@ -824,7 +824,7 @@ class MarkdownParser extends Transform {
                             
                             this.skipStart += 2;
                         } else {
-                            iAdjust = i-2;
+                            iAdjust = i-1;
                             
                             this.skipStart += 1;
                         }
