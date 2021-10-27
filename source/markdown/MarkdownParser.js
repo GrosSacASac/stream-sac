@@ -283,7 +283,7 @@ class MarkdownParser extends Transform {
                         htmlOutput = `${htmlOutput}<del>${replaceThings(
                             this._closeInlineStuff(
                                 nextIndex()+1,
-                                this.indexes[closingPairIndex].i+1,
+                                this.indexes[closingPairIndex].i,
                                 j+2,
                                 closingPairIndex,
                             ), links)}</del>`;
@@ -397,7 +397,8 @@ class MarkdownParser extends Transform {
                         }
                     }
                 } else {
-                    htmlOutput = `${htmlOutput}${c}`
+                    // no need, the 
+                    // htmlOutput = `${htmlOutput}${c}`;
                 }
                 
             } else if (c === `*`) {
