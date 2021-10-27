@@ -559,7 +559,7 @@ class MarkdownParser extends Transform {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
 
-                let rawString = this.currentString.substring(this.rawDescriptionEnd, i - 4).trim();
+                let rawString = this.currentString.substring(this.rawDescriptionEnd, i - 3).trim();
                 let currentInlineString;
 
                 let highlighted;
@@ -620,7 +620,7 @@ class MarkdownParser extends Transform {
                     this.closingBackTicks += 1;
                     continue;
                 } else {
-                    this._closeCurrent(toPush, i - iAdjust + 1);
+                    this._closeCurrent(toPush, i - iAdjust);
                     this.currentString = asString.substr(i);
                     iAdjust = i;
                     this._refresh();
