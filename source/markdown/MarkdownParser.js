@@ -802,13 +802,12 @@ class MarkdownParser extends Transform {
                         if (c === ` `) {
                             this.listTypeOrdered.push(true);
                             this.state = STATE.LIST_ITEM_TEXT;
-                            if (!this.items.length) {
+                            
                                 this.skipStart += 3;
                                 iAdjust = i - this.skipStart + 1;
-                            } else {
-                                this.skipStart += 3;
-                                iAdjust = i-this.skipStart+1;
-                            }
+                            
+
+                            
                         } else {
                             // force go loop to go again with current character
                             i -= 2;
@@ -820,13 +819,10 @@ class MarkdownParser extends Transform {
                     if (c === ` `) {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
-                        if (!this.items.length) {
+                        
                             this.skipStart += 2;
                             iAdjust = i-this.skipStart+1;
-                        } else {
-                            this.skipStart += 2;
-                            iAdjust = i-this.skipStart+1;
-                        }
+                        
                     } else {
                         if (c === `-`) {
                             this._refresh();
