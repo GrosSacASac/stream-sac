@@ -744,7 +744,7 @@ class MarkdownParser extends Transform {
                                 this.backTicks = 1;
                                 rawStartedAt = i;
                             } else if (isWhitespace(c)) {
-                                this.skipStart += 1
+                                this.skipStart += 1;
                             } else {
                                 // c = this._escapeHtml(c); // todo when closing
                                 if (this.newLined) {
@@ -803,11 +803,11 @@ class MarkdownParser extends Transform {
                             this.listTypeOrdered.push(true);
                             this.state = STATE.LIST_ITEM_TEXT;
                             if (!this.items.length) {
-                                iAdjust = i - 3;
                                 this.skipStart += 3;
+                                iAdjust = i - this.skipStart + 1;
                             } else {
-                                iAdjust = i-2;
-                                this.skipStart += 2;
+                                this.skipStart += 3;
+                                iAdjust = i-this.skipStart+1;
                             }
                         } else {
                             // force go loop to go again with current character
@@ -821,13 +821,11 @@ class MarkdownParser extends Transform {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
                         if (!this.items.length) {
-                            iAdjust = i-2;
-                            
                             this.skipStart += 2;
+                            iAdjust = i-this.skipStart+1;
                         } else {
-                            iAdjust = i-1;
-                            
-                            this.skipStart += 1;
+                            this.skipStart += 2;
+                            iAdjust = i-this.skipStart+1;
                         }
                     } else {
                         if (c === `-`) {
@@ -878,7 +876,6 @@ class MarkdownParser extends Transform {
                         this.skipStart += 1;
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
-                        this.skipStart += 1;
                     } else if (Number.isFinite(Number(c))) {
                         this.state = STATE.ORDERED_LIST_START;
                         this.lastCharacter = c;
