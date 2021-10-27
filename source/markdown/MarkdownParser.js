@@ -594,6 +594,7 @@ class MarkdownParser extends Transform {
     }
 
     _escapeHtml(c) {
+        // does not escape " in the midddle of a p
         if (!needsToBeEscaped.includes(c)) {
             return c;
         }
