@@ -507,6 +507,9 @@ class MarkdownParser extends Transform {
             i -= skip;
         }
         let inlineOutput;
+        if (this.state === STATE.TEXT) {
+            this.skipStart -= 1;
+        }
         if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW && this.state !== STATE.AFTER_EMPTY_HTML) {
             inlineOutput = this._closeInlineStuff(0, i).trim();
         }
@@ -662,7 +665,7 @@ class MarkdownParser extends Transform {
                         let currentTagName = ``;
                         for (let j = this.tagNameStart; j < asString.length; j += 1) {
                             if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
-                                break; // todo skipe whitespace < img>
+                                break; // todo skip whitespace < img>
                             }
                             currentTagName = `${currentTagName}${asString[j]}`;
                         }
@@ -705,12 +708,13 @@ class MarkdownParser extends Transform {
                 case STATE.TEXT:
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this.skipStart -= 1;
                             this._closeCurrent(toPush, i - iAdjust);
                             this.currentString = asString.substr(i + 1);
                             iAdjust = i + 1;
                         } else {
-                            this.skipStart += 1; // todo only if firstChar ?
+                            if (this.firstCharcater) {
+                                this.skipStart += 1; // todo only if firstChar ?
+                            }
                             this.newLined = true;
                         }
                     } else if (c === `=` && this.newLined &&
