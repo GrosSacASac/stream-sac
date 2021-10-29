@@ -686,15 +686,18 @@ class MarkdownParser extends Transform {
                     break;
                 case STATE.INISIDE_HTML:
                     if (c === `>`) {
-                        if (this._currentTagName === this.currentString.slice(-this._currentTagName.length)) {
+                        const closingTagName = asString.slice(i-this._currentTagName.length, i)
+                        if (this._currentTagName === closingTagName) {
 
-                            this._selfBuffer(c);
+                            
+                            this.state = STATE.AFTER_EMPTY_HTML;
+                            this.currentString = asString.substr(this.tagNameStart - 1);
+                            this._closeCurrent(toPush, i + 1 - iAdjust - (this.tagNameStart - 1));
+                            this.currentString = asString.substr(i + 1);
+                            iAdjust = i + 1;
                         } else {
-
-                            this._selfBuffer(c);
                         }
                     } else {
-                        this._selfBuffer(c);
 
                     }
                     break;
