@@ -71,6 +71,7 @@ const STATE = {
     QUOTE: i++,
     HORIZONTAL_RULE: i++,
     POTENTIAL_HTML: i++,
+    AFTER_EMPTY_HTML: i++,
     INISIDE_HTML: i++,
 };
 
@@ -506,7 +507,7 @@ class MarkdownParser extends Transform {
             i -= skip;
         }
         let inlineOutput;
-        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW) {
+        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW && this.state !== STATE.AFTER_EMPTY_HTML) {
             inlineOutput = this._closeInlineStuff(0, i).trim();
         }
         switch (this.state) {
@@ -519,6 +520,11 @@ class MarkdownParser extends Transform {
                 if (inlineOutput) {
                     toPush.push(`<p>${inlineOutput}</p>`);
                 }
+                this._refresh();
+                break;
+                
+            case STATE.AFTER_EMPTY_HTML:
+                toPush.push(this.currentString.substring(0, i));
                 this._refresh();
                 break;
             case STATE.QUOTE:
@@ -650,21 +656,22 @@ class MarkdownParser extends Transform {
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
 
-                        this.state = STATE.text;
+                        this.state = STATE.TEXT;
 
                     } else if (c === `>`) {
                         let currentTagName = ``;
-                        for (let j = 1; j < asString.length; j += 1) {
+                        for (let j = this.tagNameStart; j < asString.length; j += 1) {
                             if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
-                                break;
+                                break; // todo skipe whitespace < img>
                             }
-                            currentTagName = `${currentTagName}${asString[i]}`;
+                            currentTagName = `${currentTagName}${asString[j]}`;
                         }
                         
                         if (emptyElements.includes(currentTagName)) {
-                            toPush.push(`<${currentTagName}>`);
+                            this.state = STATE.AFTER_EMPTY_HTML;
+                            this._closeCurrent(toPush, i - iAdjust);
+                            this.currentString = asString.substr(i + 1);
                             iAdjust = i + 1;
-                            this._refresh();
                         } else {
                             this._currentTagName = currentTagName;
                             this.state = STATE.INISIDE_HTML;
@@ -673,6 +680,8 @@ class MarkdownParser extends Transform {
                     } else {
                         // this._selfBuffer(c);
                     }
+                    
+                    this.lastCharacter = c;
                     break;
                 case STATE.INISIDE_HTML:
                     if (c === `>`) {
@@ -737,7 +746,8 @@ class MarkdownParser extends Transform {
                                 this.skipStart += 1;
                             } else if (c === `<`) {
                                 this.state = STATE.POTENTIAL_HTML;
-                                this.lastCharacter = c
+                                this.lastCharacter = c;
+                                this.tagNameStart = i + 1;
                             } else {
                                 // c = this._escapeHtml(c); // todo when closing
                                 if (this.newLined) {
@@ -924,7 +934,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 default:
-                    done(`Invalid state`);
+                    done(`Invalid state ${this.state}`);
                     return;
             }
         }
