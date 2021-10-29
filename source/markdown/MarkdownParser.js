@@ -710,7 +710,7 @@ class MarkdownParser extends Transform {
                             this.currentString = asString.substr(i + 1);
                             iAdjust = i + 1;
                         } else {
-                            this.skipStart += 1;
+                            this.skipStart += 1; // todo only if firstChar ?
                             this.newLined = true;
                         }
                     } else if (c === `=` && this.newLined &&
@@ -766,7 +766,7 @@ class MarkdownParser extends Transform {
                             }
                         } else {
                             // c = this._escapeHtml(c); // todo when closing
-                            if (this.newLined) {
+                            if (this.newLined && !isWhitespace(c)) {
                                 // this._selfBuffer(` `); // todo
                                 this.newLined = false;
                             }
