@@ -650,21 +650,20 @@ class MarkdownParser extends Transform {
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
 
-                        // correct and escape the <
-                        this._selfBuffer(escapeHtml(`<`));
-                        this._selfBuffer(c);
+                        this.state = STATE.text;
 
                     } else if (c === `>`) {
                         let currentTagName = ``;
-                        for (let i = 1; i < asString.length; i += 1) {
-                            if (!isAsciiLetter(asString[i]) && asString[i] !== `-`) {
+                        for (let j = 1; j < asString.length; j += 1) {
+                            if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
                                 break;
                             }
                             currentTagName = `${currentTagName}${asString[i]}`;
                         }
-                        this._selfBuffer(c);
+                        
                         if (emptyElements.includes(currentTagName)) {
-                            toPush.push(this.currentString);
+                            toPush.push(`<${currentTagName}>`);
+                            iAdjust = i + 1;
                             this._refresh();
                         } else {
                             this._currentTagName = currentTagName;
@@ -672,7 +671,7 @@ class MarkdownParser extends Transform {
                         }
 
                     } else {
-                        this._selfBuffer(c);
+                        // this._selfBuffer(c);
                     }
                     break;
                 case STATE.INISIDE_HTML:
@@ -736,6 +735,9 @@ class MarkdownParser extends Transform {
                                 rawStartedAt = i;
                             } else if (isWhitespace(c)) {
                                 this.skipStart += 1;
+                            } else if (c === `<`) {
+                                this.state = STATE.POTENTIAL_HTML;
+                                this.lastCharacter = c
                             } else {
                                 // c = this._escapeHtml(c); // todo when closing
                                 if (this.newLined) {
