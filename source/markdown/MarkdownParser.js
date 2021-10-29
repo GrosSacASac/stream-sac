@@ -669,7 +669,8 @@ class MarkdownParser extends Transform {
                         
                         if (emptyElements.includes(currentTagName)) {
                             this.state = STATE.AFTER_EMPTY_HTML;
-                            this._closeCurrent(toPush, i - iAdjust);
+                            this.currentString = asString.substr(this.tagNameStart - 1);
+                            this._closeCurrent(toPush, i + 1 - iAdjust - (this.tagNameStart - 1));
                             this.currentString = asString.substr(i + 1);
                             iAdjust = i + 1;
                         } else {
