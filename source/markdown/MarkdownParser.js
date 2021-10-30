@@ -658,9 +658,8 @@ class MarkdownParser extends Transform {
                 case STATE.POTENTIAL_HTML:
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
-
                         this.state = STATE.TEXT;
-
+                        this.firstCharcater  = false;
                     } else if (c === `>`) {
                         let currentTagName = ``;
                         for (let j = this.tagNameStart; j < asString.length; j += 1) {
