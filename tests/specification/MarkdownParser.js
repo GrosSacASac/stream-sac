@@ -1,5 +1,5 @@
 import test from "ava";
-import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
+import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
 import { finished } from "stream/promises";
 import slugify from "@sindresorhus/slugify";

@@ -1,6 +1,6 @@
 import fs from "fs";
 import { pipeline } from "stream";
-import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
+import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 
 const source = `./readme.md`;
 const destination =  `./tests/manual/readme.html`;
