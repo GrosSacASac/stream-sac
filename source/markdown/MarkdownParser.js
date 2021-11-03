@@ -714,7 +714,7 @@ class MarkdownParser extends Transform {
                             iAdjust = i + 1;
                         } else {
                             if (this.firstCharcater) {
-                                this.skipStart += 1; // todo only if firstChar ?
+                                this.skipStart += 1;
                             }
                             this.newLined = true;
                         }
@@ -806,7 +806,6 @@ class MarkdownParser extends Transform {
                             this.lastCharacter = c;
                         } else {
                             // force go loop to go again with current character
-                            // todo avoid infinite loop
                             i -= 1;
                             this.state = STATE.TEXT;
                         }

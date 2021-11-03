@@ -636,6 +636,19 @@ test(`ordered list`, async t => {
     t.is(forceBuffer, (`<ol><li>${listItem}</li><li>${otherListItem}</li></ol>`));
 });
 
+test(`not ordered list`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `aaa bbb`
+    concatAsStream([` 1 ${text}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>1 ${text}</p>`));
+});
+
 // todo
 // test(`nested list`, async t => {
 //     const markdownParser = new MarkdownParser();
