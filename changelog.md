@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.16.0 Unfinished
+## 1.16.0
 
 Change how MarkdownParser works internally
 
