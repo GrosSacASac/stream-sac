@@ -115,6 +115,7 @@ const removeIndexesInsideLinks = (indexes, links) => {
     let indexesI = 0;
     let linksI = 0;
     let position = 0;
+    let removed = 0;
     while (linksI < links.length && indexesI < indexes.length) {
         const link = links[linksI];
         while (position !== undefined && position < link.iEnd) {
@@ -123,13 +124,14 @@ const removeIndexesInsideLinks = (indexes, links) => {
             if (position !== undefined && position >= link.i && position <= link.iEnd) {
                 // inside a link remove
                 indexes.splice(indexesI, 1);
-                end -= 1;
+                removed += 1;
             } else {
                 indexesI += 1;
             }
         }
         linksI += 1;
     }
+    return removed;
 }
 const replaceThings = (text, links) => {
     links.forEach(({ original, replacement }) => {
@@ -180,7 +182,8 @@ class MarkdownParser extends Transform {
 
 
         const links = scanForLinks(this.currentString, currentStringStart, currentStringEnd);
-        removeIndexesInsideLinks(this.indexes, links);
+        const removed = removeIndexesInsideLinks(this.indexes, links);
+        end -= removed;
         let htmlOutput = ``;
         let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
         if (lastUsed > currentStringStart) {
