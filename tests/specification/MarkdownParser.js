@@ -809,8 +809,19 @@ test(`link inside ordered list`, async t => {
 });
 
 
-```
+test(`h3 and link inside li`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
 ### Related
 
  - [from2](https://www.npmjs.com/package/from2)
- ```
+`
+    ]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<h3>Related</h3><ul><li><a href="https://www.npmjs.com/package/from2">from2</a></li></ul>`));
+});
