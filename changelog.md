@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0
+
+MarkdownParser split into
+
+ * MarkdownParserNode.js import this to have have it like 1.16.0
+ * MarkdownParserWeb.js (unfinished)
+ * MarkdownParser.js (actual implementation)
+
 ## 1.16.0
 
 Change how MarkdownParser works internally
