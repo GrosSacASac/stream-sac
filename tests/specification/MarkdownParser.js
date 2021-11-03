@@ -3,7 +3,12 @@ import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
 import { finished } from "stream/promises";
 import slugify from "@sindresorhus/slugify";
+//todo change order (block then inline)
 
+
+test(`MarkdownParser is a function`, t => {
+    t.is(typeof MarkdownParser, `function`);
+});
 
 test(`paragraph`, async t => {
     const markdownParser = new MarkdownParser();
@@ -50,6 +55,11 @@ ${author}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
 });
 
+// test(`inline quote`, async t => {
+//     // is this even possible in markdown ?
+//     <q></q>
+// });
+
 test(`streaming cut in half`, async t => {
     const markdownParser = new MarkdownParser();
     const t1 = `blablabla`
@@ -79,26 +89,26 @@ test(`title`, async t => {
     t.is(forceBuffer, `<h1>${titleText}</h1>`);
 });
 
-test(`2 title`, async t => {
+test(`title alternative`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
-    concatAsStream([`# ${titleText}
-    
- # ${titleText}`]).pipe(markdownParser);
+    concatAsStream([`${titleText}
+========`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, `<h1>${titleText}</h1><h1>${titleText}</h1>`);
+    t.is(forceBuffer, `<h1>${titleText}</h1>`);
 });
 
-test(`title alternative`, async t => {
+test(`title alternative with linefeed`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
     concatAsStream([`${titleText}
-========`]).pipe(markdownParser);
+========
+`]).pipe(markdownParser);
 
     let forceBuffer = ``
     markdownParser.on('data', (x) => {
@@ -150,7 +160,6 @@ b`]).pipe(markdownParser);
     await finished(markdownParser);
     t.is(forceBuffer, `<p>a</p><hr><p>b</p>`);
 });
-
 
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();
@@ -218,7 +227,6 @@ test(`auto detect link`, async t => {
     t.is(forceBuffer, `<p><a href="${linkTarget}">${linkTarget}</a></p>`);
 });
 
-
 test(`auto detect link that could be falsely handled as md`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://gitlab.com/_notmd_`;
@@ -232,7 +240,6 @@ test(`auto detect link that could be falsely handled as md`, async t => {
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, `<p><a href="${linkTarget}">${linkTarget}</a></p>`);
 });
-
 
 test(`link in the middle of text`, async t => {
     const markdownParser = new MarkdownParser();
@@ -250,6 +257,50 @@ test(`link in the middle of text`, async t => {
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
 });
+
+test(`em in the middle of list items`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+- ${outside}*${b}*${outside}`]).pipe(markdownParser);
+// todo alsow with 1 space before
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}</ul>`));
+});
+
+
+test(`em in the middle of list items 2`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}${li2}${li2}${li2}</ul>`));
+});
+
 
 test(`link in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
@@ -306,22 +357,6 @@ test(`raw inline`, async t => {
     t.is(forceBuffer, (`<p><code>${text}</code></p>`));
 });
 
-test(`link inside emphasis alternative syntax`, async t => {
-    const markdownParser = new MarkdownParser();
-    const x = `notice me`
-    const linkTarget = `https://example.com/`
-    const linkText = `example`
-    concatAsStream([`_${x}[${linkText}](${linkTarget})_`]).pipe(markdownParser);
-
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
-        forceBuffer = `${forceBuffer}${x}`;
-    });
-    await finished(markdownParser);
-    t.is(forceBuffer, (`<p><em>${x}<a href="${linkTarget}">${linkText}</a></em></p>`));
-});
-
-
 test(`raw in the middle of a paragraph`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`Want to make text look big ? Think about the reason first, maybe it is a title and \`<h1-6>\` should be used.`]).pipe(markdownParser);
@@ -358,6 +393,8 @@ test(`raw in the middle of a paragraph with triple backticks`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>a <code>&lt;h1-6&gt;</code> c</p>`));
 });
+
+
 test(`raw html code is displayed properly`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`
@@ -381,6 +418,7 @@ test(`raw html code is displayed properly`, async t => {
 
 &lt;/style&gt;</code></pre>`));
 });
+
 
 test(`raw and titles`, async t => {
     const markdownParser = new MarkdownParser();
@@ -426,6 +464,8 @@ e`]).pipe(markdownParser);
     t.is(forceBuffer, (`<h3>a</h3><pre><code class="language-b">c</code></pre><h3><code>d</code></h3><p>e</p>`));
 });
 
+
+
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();
     const altText = `drinking face`
@@ -439,7 +479,6 @@ test(`image`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p><img alt="${altText}" src="${source}"></p>`));
 });
-
 
 test(`strong`, async t => {
     const markdownParser = new MarkdownParser();
@@ -549,6 +588,7 @@ test(`emphasis alternative syntax`, async t => {
     t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });
 
+
 test(`unordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const listItem = `xxx yyy`
@@ -580,6 +620,7 @@ test(`unordered list with end of line`, async t => {
     t.is(forceBuffer, (`<ul><li>${listItem}</li><li>${otherListItem}</li></ul>`));
 });
 
+
 test(`ordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const listItem = `aaa bbb`
@@ -595,9 +636,176 @@ test(`ordered list`, async t => {
     t.is(forceBuffer, (`<ol><li>${listItem}</li><li>${otherListItem}</li></ol>`));
 });
 
+test(`not ordered list`, async t => {
+    const markdownParser = new MarkdownParser();
+    const text = `aaa bbb`
+    concatAsStream([` 1 ${text}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>1 ${text}</p>`));
+});
+
+// todo
+// test(`nested list`, async t => {
+//     const markdownParser = new MarkdownParser();
+//     concatAsStream([`* Fruit
+//   * Apple
+//   * Orange
+//   * Banana
+// * Dairy
+//   * Milk
+//   * Cheese`]).pipe(markdownParser);
+
+//     let forceBuffer = ``
+//     markdownParser.on('data', (x) => {
+//         forceBuffer = `${forceBuffer}${x}`;
+//     });
+//     await finished(markdownParser);
+//     t.is(forceBuffer, (`<ul><li>Fruit
+// <ul>
+// <li>Apple</li>
+// <li>Orange</li>
+// <li>Banana</li>
+// </ul>
+// </li>
+// <li>Dairy
+// <ul>
+// <li>Milk</li>
+// <li>Cheese</li>
+// </ul>
+// </li>
+// </ul>`).replaceAll("\n", ""));
+// });
 
 
-test(`link inside unordered list`, async t => {
+test(`code block`, async t => {
+    const markdownParser = new MarkdownParser();
+    const code = `x = 2`
+    const lang = `js`
+    concatAsStream([`\`\`\`${lang}
+${code}\`\`\``]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<pre><code class="language-${lang}">${code}</code></pre>`));
+});
+
+test(`inline html symbols are escaped`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    8 > 7
+
+    7 < 8
+
+    1 & 1 = 2
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>8 &gt; 7</p><p>7 &lt; 8</p><p>1 &amp; 1 = 2</p>`));
+});
+
+test(`inline html stays as is `, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    <p>8 &gt; 7</p>`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>8 &gt; 7</p>`));
+});
+
+// todo requires refactor
+// test(`inline html inside a markdown element stays as is `, async t => {
+//     const markdownParser = new MarkdownParser();
+//     concatAsStream([` * <strong>1</strong>`]).pipe(markdownParser);
+
+//     let forceBuffer = ``
+//     markdownParser.on('data', (x) => {
+//         forceBuffer = `${forceBuffer}${x}`;
+//     });
+//     await finished(markdownParser);
+//     t.is(forceBuffer, (`<ul><li><strong>1</strong></li></ul>`));
+// });
+
+test(`it is not inline html if invalid html`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+    <1>*8 > 7*</1>`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p>&lt;1&gt;<em>8 &gt; 7</em>&lt;/1&gt;</p>`));
+});
+
+test(`it should handle empty html elements`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`<img src="a" alt="b">
+
+    _c_`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
+});
+
+// convulated tests below
+
+test(`it should not mix elements`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`# a
+
+    <img src="b" alt="c">
+    
+    _d_
+    
+    ## e
+    `]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<h1>a</h1><img src="b" alt="c"><p><em>d</em></p><h2>e</h2>`));
+});
+
+test(`link inside emphasis alternative syntax`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    const linkTarget = `https://example.com/`
+    const linkText = `example`
+    concatAsStream([`_${x}[${linkText}](${linkTarget})_`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}<a href="${linkTarget}">${linkText}</a></em></p>`));
+});
+
+
+test(`link inside ordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`
     const linkText = `example`
@@ -613,3 +821,20 @@ test(`link inside unordered list`, async t => {
     t.is(forceBuffer, (`<ol><li><a href="${linkTarget}">${linkText}</a></li><li>${otherListItem}</li></ol>`));
 });
 
+
+test(`h3 and link inside li`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+### Related
+
+ - [from2](https://www.npmjs.com/package/from2)
+`
+    ]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<h3>Related</h3><ul><li><a href="https://www.npmjs.com/package/from2">from2</a></li></ul>`));
+});

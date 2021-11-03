@@ -73,7 +73,7 @@ const markdownStream = new MarkdownParser({
 ### Logo
 
 TODO
-![Put logo here](https://miaou.dystroy.org/static/Miaou.svg)
+![Put logo here](https://avatars.githubusercontent.com/u/5721194?s=40&v=4)
 
 
 ### Changelog

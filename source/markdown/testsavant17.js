@@ -103,6 +103,21 @@ test(`title alternative`, async t => {
     t.is(forceBuffer, `<h1>${titleText}</h1>`);
 });
 
+test(`title alternative with linefeed`, async t => {
+    const markdownParser = new MarkdownParser();
+    const titleText = `title`
+    concatAsStream([`${titleText}
+========
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, `<h1>${titleText}</h1>`);
+});
+
 test(`title 2`, async t => {
     const markdownParser = new MarkdownParser();
     const titleText = `title`
@@ -242,6 +257,50 @@ test(`link in the middle of text`, async t => {
     // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
     t.is(forceBuffer, (`<p>aaa<a href="${linkTarget}">${linkText}</a>bbb</p>`));
 });
+
+test(`em in the middle of list items`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+- ${outside}*${b}*${outside}`]).pipe(markdownParser);
+// todo alsow with 1 space before
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}</ul>`));
+});
+
+
+test(`em in the middle of list items 2`, async t => {
+    const markdownParser = new MarkdownParser();
+    const a = `aaa`
+    const outside = `outside`
+    const b = `bbb`
+    concatAsStream([` - *${a}*
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}
+- ${outside}*${b}*${outside}`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    // t.is(forceBuffer, (`<a href="${linkTarget}">${linkText}</a>`));
+    const li1 = `<li><em>${a}</em></li>`;
+    const li2 = `<li>${outside}<em>${b}</em>${outside}</li>`;
+    t.is(forceBuffer, (`<ul>${li1}${li2}${li2}${li2}${li2}</ul>`));
+});
+
 
 test(`link in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
@@ -732,7 +791,7 @@ test(`link inside emphasis alternative syntax`, async t => {
 });
 
 
-test(`link inside unordered list`, async t => {
+test(`link inside ordered list`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`
     const linkText = `example`
@@ -747,4 +806,5 @@ test(`link inside unordered list`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<ol><li><a href="${linkTarget}">${linkText}</a></li><li>${otherListItem}</li></ol>`));
 });
+
 
