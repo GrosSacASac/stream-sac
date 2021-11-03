@@ -19,7 +19,6 @@ class MarkdownParser extends Transform {
     }
 
     _flush(done) {
-        console.log("success")
         flush(this)
         done();
     }
