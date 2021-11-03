@@ -626,9 +626,6 @@ class MarkdownParser extends Transform {
 
         for (let i = 0; i < length; i += 1) {
             let c = asString[i];
-            if (c === `\r`) {
-                continue;
-            }
             if (this.state === STATE.CLOSING_RAW) {
                 if (c === `\``) {
                     this.closingBackTicks += 1;
