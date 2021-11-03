@@ -34,6 +34,7 @@ const emptyElements = [
     `wbr`,
 ];
 
+// todo only markdown - inline note worthy ?
 const mardkownNoteWorthyCharacters = [
     `~`,
     `\``,
@@ -45,11 +46,11 @@ const mardkownNoteWorthyCharacters = [
     `*`,
     `_`,
     `!`,
-    `<`,
-    `>`,
     `#`,
     `=`,
     `:`,
+    // `<`,
+    // `>`,
 ]
 
 
@@ -174,7 +175,7 @@ class MarkdownParser extends Transform {
             this.skipStart = 0;
         }
         if (!this.indexes.length || start === end) {
-            return this.currentString.substring(currentStringStart, currentStringEnd);
+            return escapeHtml(this.currentString.substring(currentStringStart, currentStringEnd));
         }
 
 
@@ -659,6 +660,7 @@ class MarkdownParser extends Transform {
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
                         this.state = STATE.TEXT;
+                        this.skipStart -= +5;
                         this.firstCharcater  = false;
                     } else if (c === `>`) {
                         let currentTagName = ``;
