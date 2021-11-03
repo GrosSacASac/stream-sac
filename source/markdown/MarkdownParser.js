@@ -2,13 +2,13 @@ export { MarkdownParser };
 
 import { Transform } from "stream";
 import { isWhitespaceCharacter as isWhitespace } from "is-whitespace-character";
-import {escape as escapeHtml} from 'html-escaper';
+import { escape as escapeHtml } from 'html-escaper';
 import slugify from "@sindresorhus/slugify";
 
 
 const isAsciiLetter = (c) => {
     const ch = c.charCodeAt(0);
-	return (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+    return (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
 };
 
 const needsToBeEscaped = [
@@ -34,6 +34,7 @@ const emptyElements = [
     `wbr`,
 ];
 
+// todo only markdown - inline note worthy ?
 const mardkownNoteWorthyCharacters = [
     `~`,
     `\``,
@@ -45,11 +46,11 @@ const mardkownNoteWorthyCharacters = [
     `*`,
     `_`,
     `!`,
-    `<`,
-    `>`,
     `#`,
     `=`,
     `:`,
+    // `<`,
+    // `>`,
 ]
 
 
@@ -71,6 +72,7 @@ const STATE = {
     QUOTE: i++,
     HORIZONTAL_RULE: i++,
     POTENTIAL_HTML: i++,
+    AFTER_EMPTY_HTML: i++,
     INISIDE_HTML: i++,
 };
 
@@ -94,8 +96,8 @@ const scanForLinks = (plainText, start, stop) => {
     const words = plainText.split(` `);
     return words.reduce((links, word) => {
         if (word.startsWith("https://") || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
-            const index= plainText.indexOf(word);
-            const indexEnd= index + word.length;
+            const index = plainText.indexOf(word);
+            const indexEnd = index + word.length;
             if (index >= start && indexEnd <= stop) {
                 links.push({
                     i: index,
@@ -113,6 +115,7 @@ const removeIndexesInsideLinks = (indexes, links) => {
     let indexesI = 0;
     let linksI = 0;
     let position = 0;
+    let removed = 0;
     while (linksI < links.length && indexesI < indexes.length) {
         const link = links[linksI];
         while (position !== undefined && position < link.iEnd) {
@@ -121,16 +124,17 @@ const removeIndexesInsideLinks = (indexes, links) => {
             if (position !== undefined && position >= link.i && position <= link.iEnd) {
                 // inside a link remove
                 indexes.splice(indexesI, 1);
-                end -= 1;
+                removed += 1;
             } else {
                 indexesI += 1;
             }
         }
         linksI += 1;
     }
+    return removed;
 }
 const replaceThings = (text, links) => {
-    links.forEach(({original, replacement}) => {
+    links.forEach(({ original, replacement }) => {
         text = text.replace(original, replacement);
     });
     return text;
@@ -173,31 +177,32 @@ class MarkdownParser extends Transform {
             this.skipStart = 0;
         }
         if (!this.indexes.length || start === end) {
-            return this.currentString.substring(currentStringStart, currentStringEnd);
+            return escapeHtml(this.currentString.substring(currentStringStart, currentStringEnd));
         }
-        
+
 
         const links = scanForLinks(this.currentString, currentStringStart, currentStringEnd);
-        removeIndexesInsideLinks(this.indexes, links);
+        const removed = removeIndexesInsideLinks(this.indexes, links);
+        end -= removed;
         let htmlOutput = ``;
         let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
         if (lastUsed > currentStringStart) {
             // substring does weird things if end is smaller than start
-            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart) )), links)}`;
+            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart))), links)}`;
         }
         let j;
         const nextCharacter = () => {
-            return this.indexes[j+1]?.c;
+            return this.indexes[j + 1]?.c;
         }
         const nextIndex = () => {
-            return this.indexes[j+1]?.i;
+            return this.indexes[j + 1]?.i;
         }
         const findClosingPair = (after, targetC) => {
             let result;
             let firstFound = false;
             let firstIndex = 0;
-            for (let k = after; k < end; k+= 1) {
-                const {i, c} = this.indexes[k];
+            for (let k = after; k < end; k += 1) {
+                const { i, c } = this.indexes[k];
                 if (c === targetC) {
                     if (!firstFound || firstIndex + 1 !== i) {
                         firstFound = true;
@@ -209,7 +214,7 @@ class MarkdownParser extends Transform {
                 } else {
                     firstFound = false;
                 }
-            } 
+            }
         }
         const findLastClosingTriple = (after, targetC) => {
             let result;
@@ -219,8 +224,8 @@ class MarkdownParser extends Transform {
             let secondFound = false;
             let secondIndex = false;
             let thirdIndex;
-            for (let k = after; k < end; k+= 1) {
-                const {i, c} = this.indexes[k];
+            for (let k = after; k < end; k += 1) {
+                const { i, c } = this.indexes[k];
                 if (c === targetC) {
                     if (!firstFound || (!secondFound && firstIndex + 1 !== i)) {
                         firstFound = true;
@@ -236,7 +241,7 @@ class MarkdownParser extends Transform {
                         if (i === thirdIndex + 1) {
                             // 4 or 5  back ticks in a row
                             confirmedResult += 1;
-                            thirdIndex += 1; 
+                            thirdIndex += 1;
                         } else {
                             break;
                         }
@@ -252,43 +257,43 @@ class MarkdownParser extends Transform {
             return confirmedResult;
         }
         const findClosingSimple = (after, targetC) => {
-            for (let k = after; k < end; k+= 1) {
-                const {i, c} = this.indexes[k];
+            for (let k = after; k < end; k += 1) {
+                const { i, c } = this.indexes[k];
                 if (c === targetC) {
                     return k
                 }
-            } 
+            }
         }
 
-        for (j = start; j < end; j+= 1) {
-            const {i, c, u} = this.indexes[j];
+        for (j = start; j < end; j += 1) {
+            const { i, c, u } = this.indexes[j];
             if (u) {
                 continue;
             } else {
                 this.indexes[j].u = true;
             }
             if (c === `~`) {
-                if (nextCharacter() === `~` && nextIndex() === i+1) {
+                if (nextCharacter() === `~` && nextIndex() === i + 1) {
                     // DELETED
                     // todo do not search inside raw stuff
-                    const closingPairIndex = findClosingPair(j+2, `~`);
+                    const closingPairIndex = findClosingPair(j + 2, `~`);
                     if (closingPairIndex === undefined) {
                         // does not have a closing pair
                         j += 1;
-                        
+
                     } else {
-                        this.indexes[j+1].u = true;
+                        this.indexes[j + 1].u = true;
                         this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex+1].u = true;
+                        this.indexes[closingPairIndex + 1].u = true;
                         htmlOutput = `${htmlOutput}<del>${replaceThings(
                             this._closeInlineStuff(
-                                nextIndex()+1+currentStringStart,
-                                this.indexes[closingPairIndex].i+1+currentStringStart,
-                                j+2,
+                                nextIndex() + 1,
+                                this.indexes[closingPairIndex].i,
+                                j + 2,
                                 closingPairIndex,
                             ), links)}</del>`;
                         j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i+2+currentStringStart
+                        lastUsed = this.indexes[closingPairIndex].i + 2
                     }
 
                 } else {
@@ -296,67 +301,63 @@ class MarkdownParser extends Transform {
                 }
             } else if (c === `[`) {
                 // link
-                const closingIndex = findClosingSimple(j+1, `]`);
+                const closingIndex = findClosingSimple(j + 1, `]`);
                 if (closingIndex !== undefined) {
                     const closingPosition = this.indexes[closingIndex].i;
-                    const openingParenthese = findClosingSimple(closingIndex+1, `(`);
+                    const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
                     if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
-                        const closingParenthese = findClosingSimple(openingParenthese+1, `)`);
+                        const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
                         if (closingParenthese !== undefined) {
                             // regular link
                             this.indexes[closingIndex].u = true;
                             htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
-                                this.currentString.substring(this.indexes[openingParenthese].i+currentStringStart+1, this.indexes[closingParenthese].i+currentStringStart)
-                            )}">${
-                                this._closeInlineStuff(
-                                    i+currentStringStart+1,
-                                    this.indexes[closingIndex].i+currentStringStart,
-                                    j+1,
-                                    closingIndex,
+                                this.currentString.substring(this.indexes[openingParenthese].i + 1, this.indexes[closingParenthese].i)
+                            )}">${this._closeInlineStuff(
+                                i + 1,
+                                this.indexes[closingIndex].i,
+                                j + 1,
+                                closingIndex,
                             )}</a>`;
                             j = closingParenthese;
-                            lastUsed = this.indexes[closingParenthese].i+1;
+                            lastUsed = this.indexes[closingParenthese].i + 1;
                         }
                     } else {
-                        const openingBracket = findClosingSimple(closingIndex+1, `[`);
+                        const openingBracket = findClosingSimple(closingIndex + 1, `[`);
                         if (openingBracket !== undefined && this.indexes[openingBracket].i === closingPosition + 1) {
-                            const closingBracket = findClosingSimple(openingBracket+1, `]`);
+                            const closingBracket = findClosingSimple(openingBracket + 1, `]`);
                             if (closingBracket !== undefined) {
                                 // reference link
                                 this.indexes[closingIndex].u = true;
-                                const slug = slugify(this.currentString.substring(this.indexes[openingBracket].i+1, this.indexes[closingBracket].i));
-                                htmlOutput = `${htmlOutput}<a href="#${slug}">${
-                                    this._closeInlineStuff(
-                                        i+1+currentStringStart,
-                                        this.indexes[closingIndex].i+currentStringStart,
-                                        j+1,
-                                        closingIndex,
+                                const slug = slugify(this.currentString.substring(this.indexes[openingBracket].i + 1, this.indexes[closingBracket].i));
+                                htmlOutput = `${htmlOutput}<a href="#${slug}">${this._closeInlineStuff(
+                                    i + 1,
+                                    this.indexes[closingIndex].i,
+                                    j + 1,
+                                    closingIndex,
                                 )}</a>`;
                                 j = closingBracket;
-                                lastUsed = this.indexes[closingBracket].i+1+currentStringStart
+                                lastUsed = this.indexes[closingBracket].i + 1
                             }
                         } else {
                             // reference from a previous link
-                            const colon = findClosingSimple(closingIndex+1, `:`);
+                            const colon = findClosingSimple(closingIndex + 1, `:`);
                             if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
-                                const slug = slugify(this.currentString.substring(i+1, closingPosition+1+currentStringStart));
+                                const slug = slugify(this.currentString.substring(i + 1, closingPosition + 1));
                                 htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
-                                    this.currentString.substring(this.indexes[colon].i+2+currentStringStart, currentStringEnd).trim()
-                                )}">${
-                                    this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart)
-                                }</a>`;
+                                    this.currentString.substring(this.indexes[colon].i + 2, currentStringEnd).trim()
+                                )}">${this.currentString.substring(i + 1, closingPosition)
+                                    }</a>`;
                                 j = end;
                                 lastUsed = currentStringEnd
                                 break;
                             } else {
                                 // reference link with only text
                                 this.indexes[closingIndex].u = true;
-                                const slug = slugify(this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart));
-                                htmlOutput = `${htmlOutput}<a href="#${slug}">${
-                                    this.currentString.substring(i+1+currentStringStart, closingPosition+currentStringStart)
-                                }</a>`;
+                                const slug = slugify(this.currentString.substring(i + 1, closingPosition));
+                                htmlOutput = `${htmlOutput}<a href="#${slug}">${this.currentString.substring(i + 1, closingPosition)
+                                    }</a>`;
                                 j = closingIndex;
-                                lastUsed = closingPosition+1+currentStringStart
+                                lastUsed = closingPosition + 1
                             }
                         }
                     }
@@ -366,22 +367,22 @@ class MarkdownParser extends Transform {
 
                 }
             } else if (c === `!`) {
-                const openingBracketIndex = findClosingSimple(j+1, `[`);
+                const openingBracketIndex = findClosingSimple(j + 1, `[`);
                 if (openingBracketIndex) {
-                    const closingIndex = findClosingSimple(openingBracketIndex+1, `]`);
+                    const closingIndex = findClosingSimple(openingBracketIndex + 1, `]`);
                     if (closingIndex !== undefined) {
                         const closingPosition = this.indexes[closingIndex].i;
-                        const openingParenthese = findClosingSimple(closingIndex+1, `(`);
+                        const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
                         if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
-                            const closingParenthese = findClosingSimple(openingParenthese+1, `)`);
+                            const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
                             if (closingParenthese !== undefined) {
                                 // regular image
                                 this.indexes[closingIndex].u = true;
-                                const src = this.currentString.substring(this.indexes[openingParenthese].i+1+currentStringStart, this.indexes[closingParenthese].i+currentStringStart);
+                                const src = this.currentString.substring(this.indexes[openingParenthese].i + 1, this.indexes[closingParenthese].i);
                                 const alt = this._closeInlineStuff(
-                                    this.indexes[openingBracketIndex].i+1+currentStringStart,
-                                    this.indexes[closingIndex].i+currentStringStart,
-                                    j+2,
+                                    this.indexes[openingBracketIndex].i + 1,
+                                    this.indexes[closingIndex].i,
+                                    j + 2,
                                     closingIndex,
                                 );
                                 let output;
@@ -392,130 +393,128 @@ class MarkdownParser extends Transform {
                                 }
                                 htmlOutput = `${htmlOutput}${output}`;
                                 j = closingParenthese;
-                                lastUsed = this.indexes[closingParenthese].i+1+currentStringStart
+                                lastUsed = this.indexes[closingParenthese].i + 1
                             }
                         }
                     }
                 } else {
-                    htmlOutput = `${htmlOutput}${c}`
+                    // no need, the 
+                    // htmlOutput = `${htmlOutput}${c}`;
                 }
-                
+
             } else if (c === `*`) {
                 if (nextCharacter() === `*` && nextIndex() === i + 1) {
                     // strong
-                    const closingPairIndex = findClosingPair(j+2, `*`);
+                    const closingPairIndex = findClosingPair(j + 2, `*`);
                     if (closingPairIndex) {
-                        this.indexes[j+1].u = true;
+                        this.indexes[j + 1].u = true;
                         this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex+1].u = true;
-                        htmlOutput = `${htmlOutput}<strong>${
-                            replaceThings(this._closeInlineStuff(
-                                nextIndex()+1+currentStringStart,
-                                this.indexes[closingPairIndex].i+currentStringStart,
-                                j+2,
-                                closingPairIndex,
-                            ), links)}</strong>`;
+                        this.indexes[closingPairIndex + 1].u = true;
+                        htmlOutput = `${htmlOutput}<strong>${replaceThings(this._closeInlineStuff(
+                            nextIndex() + 1,
+                            this.indexes[closingPairIndex].i,
+                            j + 2,
+                            closingPairIndex,
+                        ), links)}</strong>`;
                         j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i+2+currentStringStart
+                        lastUsed = this.indexes[closingPairIndex].i + 2
                     } else {
                         j += 1;
                     }
                 } else {
                     // emphasis
-                    const nextStar = findClosingSimple(j+1, `*`);
+                    const nextStar = findClosingSimple(j + 1, `*`);
                     if (nextStar) {
                         this.indexes[nextStar].u = true;
-                        htmlOutput = `${htmlOutput}<em>${
-                            replaceThings(this._closeInlineStuff(
-                                i+1+currentStringStart,
-                                this.indexes[nextStar].i+currentStringStart,
-                                j+1,
-                                nextStar,
-                            ), links)}</em>`;
+                        htmlOutput = `${htmlOutput}<em>${replaceThings(this._closeInlineStuff(
+                            i + 1,
+                            this.indexes[nextStar].i,
+                            j + 1,
+                            nextStar,
+                        ), links)}</em>`;
                         j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i+1+currentStringStart;
-                    } 
+                        lastUsed = this.indexes[nextStar].i + 1;
+                    }
                 }
             } else if (c === `_`) {
                 // todo deduplicate with above
                 if (nextCharacter() === `_` && nextIndex() === i + 1) {
                     // strong
-                    const closingPairIndex = findClosingPair(j+2, `_`);
+                    const closingPairIndex = findClosingPair(j + 2, `_`);
                     if (closingPairIndex) {
-                        this.indexes[j+1].u = true;
+                        this.indexes[j + 1].u = true;
                         this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex+1].u = true;
-                        htmlOutput = `${htmlOutput}<strong>${
-                            replaceThings(this._closeInlineStuff(
-                                nextIndex()+1+currentStringStart,
-                                this.indexes[closingPairIndex].i+currentStringStart,
-                                j+2,
-                                closingPairIndex,
-                            ), links)}</strong>`;
+                        this.indexes[closingPairIndex + 1].u = true;
+                        htmlOutput = `${htmlOutput}<strong>${replaceThings(this._closeInlineStuff(
+                            nextIndex() + 1,
+                            this.indexes[closingPairIndex].i,
+                            j + 2,
+                            closingPairIndex,
+                        ), links)}</strong>`;
                         j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i+2+currentStringStart
+                        lastUsed = this.indexes[closingPairIndex].i + 2
                     } else {
                         j += 1;
                     }
                 } else {
-                    const nextStar = findClosingSimple(j+1, `_`);
+                    const nextStar = findClosingSimple(j + 1, `_`);
                     if (nextStar) {
                         this.indexes[nextStar].u = true;
-                        htmlOutput = `${htmlOutput}<em>${
-                            replaceThings(this._closeInlineStuff(
-                                i+1+currentStringStart,
-                                this.indexes[nextStar].i+currentStringStart,
-                                j+1,
-                                nextStar,
-                            ), links)}</em>`;
+                        htmlOutput = `${htmlOutput}<em>${replaceThings(this._closeInlineStuff(
+                            i + 1,
+                            this.indexes[nextStar].i,
+                            j + 1,
+                            nextStar,
+                        ), links)}</em>`;
                         j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i+1+currentStringStart;
-                    } 
+                        lastUsed = this.indexes[nextStar].i + 1;
+                    }
                 }
             } else if (c === `\``) {
                 let wastriplebacktick = false;
-                const restOfTripleOpening = findClosingPair(j+1, `\``);
-                if (this.indexes[restOfTripleOpening]?.i === i +1) {
-                    const startOfTripleClosing = findLastClosingTriple(j+3, `\``);
+                const restOfTripleOpening = findClosingPair(j + 1, `\``);
+                if (this.indexes[restOfTripleOpening]?.i === i + 1) {
+                    const startOfTripleClosing = findLastClosingTriple(j + 3, `\``);
                     if (startOfTripleClosing) {
                         this.indexes[startOfTripleClosing].u = true;
-                        this.indexes[startOfTripleClosing+2].u = true;
-                        this.indexes[startOfTripleClosing+1].u = true;
-                        htmlOutput = `${htmlOutput}<code>${
-                            escapeHtml(this.currentString.substring(i+3+currentStringStart,this.indexes[startOfTripleClosing].i+currentStringStart))
-                        }</code>`;
+                        this.indexes[startOfTripleClosing + 2].u = true;
+                        this.indexes[startOfTripleClosing + 1].u = true;
+                        htmlOutput = `${htmlOutput}<code>${escapeHtml(this.currentString.substring(i + 3, this.indexes[startOfTripleClosing].i))
+                            }</code>`;
                         j = startOfTripleClosing + 3;
-                        lastUsed = this.indexes[startOfTripleClosing].i+3+currentStringStart;
+                        lastUsed = this.indexes[startOfTripleClosing].i + 3;
                         wastriplebacktick = true;
                     }
                 }
                 if (!wastriplebacktick) {
-                    const nextBackTick = findClosingSimple(j+1, `\``);
+                    const nextBackTick = findClosingSimple(j + 1, `\``);
                     if (nextBackTick) {
                         //raw
                         this.indexes[nextBackTick].u = true;
-                        htmlOutput = `${htmlOutput}<code>${
-                            escapeHtml(this.currentString.substring(i+1+currentStringStart,this.indexes[nextBackTick].i+currentStringStart))
-                        }</code>`;
+                        htmlOutput = `${htmlOutput}<code>${escapeHtml(this.currentString.substring(i + 1, this.indexes[nextBackTick].i))
+                            }</code>`;
                         j = nextBackTick + 1;
-                        lastUsed = this.indexes[nextBackTick].i+1+currentStringStart;
+                        lastUsed = this.indexes[nextBackTick].i + 1;
                     }
                 }
             } else if (false) {
             }
-        }        
-        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed+currentStringStart, Math.max(currentStringEnd, lastUsed+currentStringStart))), links)}`;
-        
+        }
+        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, Math.max(currentStringEnd))), links)}`;
+
     }
 
     _closeCurrent(toPush, i = this.currentString.length) {
         let skip;
         if (this.skipEnd) {
             skip = this.skipEnd;
-            i -= skip;    
+            i -= skip;
         }
         let inlineOutput;
-        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW) {
+        if (this.state === STATE.TEXT) {
+            this.skipStart -= 1;
+        }
+        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW && this.state !== STATE.AFTER_EMPTY_HTML) {
             inlineOutput = this._closeInlineStuff(0, i).trim();
         }
         switch (this.state) {
@@ -525,9 +524,14 @@ class MarkdownParser extends Transform {
                 this.state = STATE.TEXT;
                 break;
             case STATE.TEXT:
-                if (inlineOutput)  {
+                if (inlineOutput) {
                     toPush.push(`<p>${inlineOutput}</p>`);
                 }
+                this._refresh();
+                break;
+                
+            case STATE.AFTER_EMPTY_HTML:
+                toPush.push(this.currentString.substring(0, i));
                 this._refresh();
                 break;
             case STATE.QUOTE:
@@ -567,10 +571,10 @@ class MarkdownParser extends Transform {
                 if (this.rawDescription) {
                     classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
                 }
-                
-                let rawString = this.currentString.substring(this.rawDescriptionEnd, i-3).trim();
+
+                let rawString = this.currentString.substring(this.rawDescriptionEnd, i - 3).trim();
                 let currentInlineString;
-                
+
                 let highlighted;
                 if (this.highlight) {
                     highlighted = this.highlight(rawString, this.rawDescription);
@@ -580,29 +584,30 @@ class MarkdownParser extends Transform {
                 } else {
                     currentInlineString = `<pre><code${classText}>${escapeHtml(rawString)}</code></pre>`;
                 }
-                
+
                 toPush.push(currentInlineString);
                 this.state = STATE.TEXT;
-                
+
                 this.rawDescription = ``;
                 this.closingBackTicks = 0;
                 break;
-            
+
             default:
                 return;
-            
-        }        
+
+        }
     }
 
     _noteWorthyCharacters(c, i) {
         if (mardkownNoteWorthyCharacters.includes(c)) {
-            this.indexes.push({c,i});
+            this.indexes.push({ c, i });
             return true;
         }
         return false;
     }
 
     _escapeHtml(c) {
+        // does not escape " in the midddle of a p
         if (!needsToBeEscaped.includes(c)) {
             return c;
         }
@@ -621,15 +626,12 @@ class MarkdownParser extends Transform {
 
         for (let i = 0; i < length; i += 1) {
             let c = asString[i];
-            if (c === `\r`) {
-                continue;
-            }
             if (this.state === STATE.CLOSING_RAW) {
                 if (c === `\``) {
                     this.closingBackTicks += 1;
                     continue;
                 } else {
-                    this._closeCurrent(toPush, i - iAdjust+1);
+                    this._closeCurrent(toPush, i - iAdjust);
                     this.currentString = asString.substr(i);
                     iAdjust = i;
                     this._refresh();
@@ -641,14 +643,14 @@ class MarkdownParser extends Transform {
                     this.skipEnd += 1;
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust + 1);
-                        this.currentString = asString.substr(i+1);
+                        this.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     }
                     break;
                 case STATE.HORIZONTAL_RULE:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i+1);
+                        this.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     } else {
                         this.skipEnd += 1;
@@ -657,61 +659,68 @@ class MarkdownParser extends Transform {
                 case STATE.POTENTIAL_HTML:
                     if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
                         // was not html
-                        
-                        // correct and escape the <
-                        this._selfBuffer(escapeHtml(`<`));
-                        this._selfBuffer(c);
-
+                        this.state = STATE.TEXT;
+                        this.skipStart -= +5;
+                        this.firstCharcater  = false;
                     } else if (c === `>`) {
                         let currentTagName = ``;
-                        for (let i = 1; i < asString.length; i += 1) {
-                            if (!isAsciiLetter(asString[i]) && asString[i] !== `-`) {
-                                break;
+                        for (let j = this.tagNameStart; j < asString.length; j += 1) {
+                            if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
+                                break; // todo skip whitespace < img>
                             }
-                            currentTagName = `${currentTagName}${asString[i]}`;
+                            currentTagName = `${currentTagName}${asString[j]}`;
                         }
-                        this._selfBuffer(c);
+                        
                         if (emptyElements.includes(currentTagName)) {
-                            toPush.push(this.currentString);
-                            this._refresh();
+                            this.state = STATE.AFTER_EMPTY_HTML;
+                            this.currentString = asString.substr(this.tagNameStart - 1);
+                            this._closeCurrent(toPush, i + 1 -  (this.tagNameStart - 1));
+                            this.currentString = asString.substr(i + 1);
+                            iAdjust = i + 1;
                         } else {
                             this._currentTagName = currentTagName;
                             this.state = STATE.INISIDE_HTML;
                         }
 
                     } else {
-                        this._selfBuffer(c);
+                        // this._selfBuffer(c);
                     }
+                    
+                    this.lastCharacter = c;
                     break;
                 case STATE.INISIDE_HTML:
                     if (c === `>`) {
-                        if (this._currentTagName === this.currentString.slice(-this._currentTagName.length)) {
+                        const closingTagName = asString.slice(i-this._currentTagName.length, i)
+                        if (this._currentTagName === closingTagName) {
 
-                            this._selfBuffer(c);
+                            
+                            this.state = STATE.AFTER_EMPTY_HTML;
+                            this.currentString = asString.substr(this.tagNameStart - 1);
+                            this._closeCurrent(toPush, i + 1 - iAdjust - (this.tagNameStart - 1));
+                            this.currentString = asString.substr(i + 1);
+                            iAdjust = i + 1;
                         } else {
-
-                            this._selfBuffer(c);
                         }
                     } else {
-                        this._selfBuffer(c);
-                        
+
                     }
                     break;
 
                 case STATE.TEXT:
                     if (c === `\n`) {
                         if (this.newLined) {
-                            this.skipStart -= 1;
                             this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = asString.substr(i+1);
+                            this.currentString = asString.substr(i + 1);
                             iAdjust = i + 1;
                         } else {
-                            this.skipStart += 1;
+                            if (this.firstCharcater) {
+                                this.skipStart += 1;
+                            }
                             this.newLined = true;
                         }
                     } else if (c === `=` && this.newLined &&
-                    // avoid empty titles
-                    !this.firstCharcater) {
+                        // avoid empty titles
+                        !this.firstCharcater) {
                         this.state = STATE.UNDERTITLE1;
                         this.skipStart -= 1;
                         this.titleLevel = 1;
@@ -738,12 +747,16 @@ class MarkdownParser extends Transform {
                                 this.state = STATE.QUOTE;
                                 iAdjust += 1;
                                 this.skipStart += 1;
-                            }  else if (c === `\``) {
+                            } else if (c === `\``) {
                                 this.state = STATE.START_RAW;
                                 this.backTicks = 1;
                                 rawStartedAt = i;
                             } else if (isWhitespace(c)) {
-                                this.skipStart += 1
+                                this.skipStart += 1;
+                            } else if (c === `<`) {
+                                this.state = STATE.POTENTIAL_HTML;
+                                this.lastCharacter = c;
+                                this.tagNameStart = i + 1;
                             } else {
                                 // c = this._escapeHtml(c); // todo when closing
                                 if (this.newLined) {
@@ -751,14 +764,14 @@ class MarkdownParser extends Transform {
                                     this.newLined = false;
                                 }
                                 this.firstCharcater = false
-                                
+
                                 if (this._noteWorthyCharacters(c, i - iAdjust)) {
                                     continue;
                                 }
                             }
                         } else {
                             // c = this._escapeHtml(c); // todo when closing
-                            if (this.newLined) {
+                            if (this.newLined && !isWhitespace(c)) {
                                 // this._selfBuffer(` `); // todo
                                 this.newLined = false;
                             }
@@ -776,8 +789,8 @@ class MarkdownParser extends Transform {
                     if (c === `\n`) {
                         if (this.newLined) {
                             this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = asString.substr(i+1);
-                            iAdjust = i+1;
+                            this.currentString = asString.substr(i + 1);
+                            iAdjust = i + 1;
                         } else {
                             this.newLined = true;
                         }
@@ -793,7 +806,6 @@ class MarkdownParser extends Transform {
                             this.lastCharacter = c;
                         } else {
                             // force go loop to go again with current character
-                            // todo avoid infinite loop
                             i -= 1;
                             this.state = STATE.TEXT;
                         }
@@ -801,13 +813,12 @@ class MarkdownParser extends Transform {
                         if (c === ` `) {
                             this.listTypeOrdered.push(true);
                             this.state = STATE.LIST_ITEM_TEXT;
-                            if (!this.items.length) {
-                                iAdjust = i;
-                                this.skipStart += 3;
-                            } else {
-                                iAdjust = i+1;
-                                this.skipStart += 1;
-                            }
+
+                            this.skipStart += 3;
+                            iAdjust = i - this.skipStart + 1;
+
+
+
                         } else {
                             // force go loop to go again with current character
                             i -= 2;
@@ -819,15 +830,10 @@ class MarkdownParser extends Transform {
                     if (c === ` `) {
                         this.listTypeOrdered.push(false);
                         this.state = STATE.LIST_ITEM_TEXT;
-                        if (!this.items.length) {
-                            iAdjust = i+1;
-                            
-                            this.skipStart += 2;
-                        } else {
-                            iAdjust = i+1;
-                            
-                            this.skipStart += 2;
-                        }
+
+                        this.skipStart += 2;
+                        iAdjust = i - this.skipStart + 1;
+
                     } else {
                         if (c === `-`) {
                             this._refresh();
@@ -835,7 +841,7 @@ class MarkdownParser extends Transform {
                             this.skipEnd = 2;
                         } else {
                             // revert 
-                            this.indexes.push({c: this.lastCharacter,i: i-1 - iAdjust});
+                            this.indexes.push({ c: this.lastCharacter, i: i - 1 - iAdjust });
                             // force go loop to go again with current character
                             i -= 1;
                             this.state = STATE.TEXT;
@@ -850,12 +856,12 @@ class MarkdownParser extends Transform {
                         // do not this._closeCurrent(toPush, i);
                         // since it will also close the list (to handle lists at the end of markdown without line break
                         const skipStart = this.skipStart;
-                        const inlineOutput = this._closeInlineStuff(0, i-iAdjust+this.skipStart).trim();
+                        const inlineOutput = this._closeInlineStuff(0, i - iAdjust + 1).trim();
                         this.items.push(inlineOutput);
-                        this.state = STATE.LIST_ITEM_END;
-                        this.currentString = asString.substr(i+1);
-                        iAdjust = i+1;
+                        this.currentString = asString.substr(i + 1);
+                        iAdjust = i + 1 + skipStart;
                         this._refresh();
+                        this.state = STATE.LIST_ITEM_END;
                     }
                     break;
                 case STATE.TITLE_TEXT:
@@ -864,20 +870,19 @@ class MarkdownParser extends Transform {
                     }
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i+1);
+                        this.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     }
                     break;
                 case STATE.LIST_ITEM_END:
                     if (c === `\n`) {
                         this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i+1);
+                        this.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     } else if (isWhitespace(c)) {
                         this.skipStart += 1;
                     } else if (c === `-` || c === `*`) {
                         this.state = STATE.LIST_ITEM_START;
-                        this.skipStart += 1;
                     } else if (Number.isFinite(Number(c))) {
                         this.state = STATE.ORDERED_LIST_START;
                         this.lastCharacter = c;
@@ -900,11 +905,11 @@ class MarkdownParser extends Transform {
                         this.backTicks += 1;
                         if (this.backTicks === 3) {
                             this.state = STATE.RAW_DESCRIPTION;
-                            rawDescriptionStart = i+1;
-                        } 
+                            rawDescriptionStart = i + 1;
+                        }
                     } else {
-                        for (let q = rawStartedAt; q < i; q+=1) {
-                            this.indexes.push({c: `\``, i: q - iAdjust});
+                        for (let q = rawStartedAt; q < i; q += 1) {
+                            this.indexes.push({ c: `\``, i: q - iAdjust });
                         }
                         this.state = STATE.TEXT;
                         this.backTicks = 0;
@@ -913,12 +918,12 @@ class MarkdownParser extends Transform {
                 case STATE.RAW_DESCRIPTION:
                     if (c === `\n`) {
                         this.rawDescription = asString.substring(rawDescriptionStart, i);
-                        this.rawDescriptionEnd = i+1-iAdjust;
+                        this.rawDescriptionEnd = i + 1 - iAdjust;
                         this.state = STATE.RAW;
                     } else if (!isAsciiLetter(c)) {
                         // not in the description but in the raw text all along
-                        for (let q = rawStartedAt; q < rawStartedAt + 3; q+=1) {
-                            this.indexes.push({c: `\``, i: q - iAdjust});
+                        for (let q = rawStartedAt; q < rawStartedAt + 3; q += 1) {
+                            this.indexes.push({ c: `\``, i: q - iAdjust });
                         }
                         this.state = STATE.TEXT;
                         this.backTicks = 0;
@@ -937,7 +942,7 @@ class MarkdownParser extends Transform {
                     }
                     break;
                 default:
-                    done(`Invalid state`);
+                    done(`Invalid state ${this.state}`);
                     return;
             }
         }
