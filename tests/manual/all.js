@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import fs from "fs";
 import { pipeline } from "stream";
 import { concatAsStream } from "../../source/concatAsStream.js";
