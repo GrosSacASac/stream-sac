@@ -50,7 +50,7 @@ The input should be valid.
 ```js
 import {
     MarkdownParser,
-} from "stream-sac/source/markdown/MarkdownParser.js";
+} from "stream-sac/source/markdown/MarkdownParserNode.js";
 
 const markdownStream = new MarkdownParser({
     // optional
@@ -66,6 +66,18 @@ const markdownStream = new MarkdownParser({
     }
 });
 ```
+
+### Deno and Web
+
+`createMarkdownParserStream` takes the same options as above, however it is a function that returns a web transform stream. It expects data to be strings, so TextDecoderStream may have to be used
+
+```js
+import { createMarkdownParserStream } from "stream-sac/built/MarkdownParserWeb.es.js"
+// or
+import { createMarkdownParserStream } from "https://unpkg.com/stream-sac/built/MarkdownParserWeb.es.js";
+```
+
+[Complete Example for Deno](./tests/manual/DenoMarkdownParser.js)
 
 
 ## About
