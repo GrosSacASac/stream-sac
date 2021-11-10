@@ -8,7 +8,7 @@ import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 const markdownParser = new MarkdownParser({});
 markdownParser.setEncoding(`utf8`);
 const readStream = fs.createReadStream(`./readme.md`);
-const destination = `./tests/output/readme.html`;
+const destination = `./tests/output/readme-bis.html`;
 console.time(`time`);
 
 
