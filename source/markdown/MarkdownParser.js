@@ -149,8 +149,6 @@ const _escapeHtml = function (c) {
 
 
 const start = function (controller, options = {}) {
-
-
     Object.assign(controller, {
         _refresh() {
             controller.firstCharcater = true;
