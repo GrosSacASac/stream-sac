@@ -4,7 +4,7 @@ import { pipeline } from "stream";
 
 
 const source = `./tests/manual/html.html`;
-const destination =  `./tests/manual/html.min.html`;
+const destination =  `./tests/output/html.min.html`;
 const readStream = fs.createReadStream(source);
 const htmlMinifier = new HtmlMinifier({
     // jsMinifier: () => "",

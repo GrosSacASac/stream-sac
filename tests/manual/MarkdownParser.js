@@ -3,7 +3,7 @@ import { pipeline } from "stream";
 import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 
 const source = `./readme.md`;
-const destination =  `./tests/manual/readme.html`;
+const destination =  `./tests/output/readme.html`;
 const readStream = fs.createReadStream(source);
 const links = [];
 const medias = [];
