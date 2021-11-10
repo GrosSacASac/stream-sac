@@ -9,7 +9,15 @@
     "test": "ava",
     "lint-fix": "eslint --ignore-path .gitignore --fix .",
     "lint": "eslint --ignore-path .gitignore .",
-    "bundle": "rollup --config tools/rollup.config.js"
+    "bundle": "rollup --config tools/rollup.config.js",
+    "prepublishOnly": "npm t && npm run bundle"
+  },
+  "dependencies": {
+    "@sindresorhus/slugify": "^2.1.0",
+    "html-escaper": "^3.0.3",
+    "into-stream": "^7.0.0",
+    "is-whitespace-character": "^2.0.0",
+    "multistream": "^4.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.1",
@@ -60,12 +68,5 @@
     "string",
     "html",
     "minify"
-  ],
-  "dependencies": {
-    "@sindresorhus/slugify": "^2.1.0",
-    "html-escaper": "^3.0.3",
-    "into-stream": "^7.0.0",
-    "is-whitespace-character": "^2.0.0",
-    "multistream": "^4.1.0"
-  }
+  ]
 }
