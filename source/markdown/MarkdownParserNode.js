@@ -3,6 +3,8 @@ export { MarkdownParser };
 import { Transform } from "stream";
 import { flush, transform, start } from "./MarkdownParser.js";
 
+
+// could also use web stream and Readable.fromWeb to convert it to node streams
 class MarkdownParser extends Transform {
     constructor(options = {}) {
         super({ readableObjectMode: true });
