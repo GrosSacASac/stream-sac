@@ -10,7 +10,7 @@
   
 import {readableStreamFromReader as toStream} from "https://deno.land/std/io/mod.ts";
 
-  const file = toStream(await Deno.open("./readme.md", { read: true }));
+const file = toStream(await Deno.open("./readme.md", { read: true }));
 // //   console.log(Object.getOwnPropertyDescriptors(file.constructor))
   
 
@@ -25,14 +25,15 @@ import {readableStreamFromReader as toStream} from "https://deno.land/std/io/mod
 //       }
 //     await file.close();
 
-const decoder = new TextDecoder();
+
 const transformStream = new TransformStream({
     start(controller) {
       // Called immediately when the TransformStream is created
+      controller.decoder = new TextDecoder();
     },
 
     transform(chunk, controller) {
-        controller.enqueue(decoder.decode(chunk, {stream: true}));
+        controller.enqueue(controller.decoder.decode(chunk, {stream: true}).toUpperCase());
       },
   
     flush(controller) {

@@ -2,24 +2,22 @@ import { createHash } from 'crypto';
 import fs from "fs";
 import { pipeline } from "stream";
 import { concatAsStream } from "../../source/concatAsStream.js";
-import { MarkdownParser } from "../../source/markdown/MarkdownParser.js";
+import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 
 
 // example sources
 const markdownParser = new MarkdownParser({});
 markdownParser.setEncoding(`utf8`);
 const readStream = fs.createReadStream(`./readme.md`);
-const destination = `./tests/manual/readme.html`;
+const destination = `./tests/output/readme.html`;
 console.time(`time`);
 
 
 // create
 const concatedStream = concatAsStream([
     `<html>`,
-     // todo why are those 2 working 
      // readStream,
-     // readStream.pipe(createHash('sha256')),
-    // but not but not the markdownParser
+     // readStream.pipe(createHash('sha256'))
     readStream.pipe(markdownParser),
     `</html>`,
     
