@@ -1,20 +1,31 @@
 {
   "name": "stream-sac",
-  "version": "1.16.0",
+  "version": "2.0.0",
   "description": "Utility functions",
   "license": "CC0-1.0",
   "type": "module",
   "main": "source/html/escapeHtmlStream.js",
   "scripts": {
     "test": "ava",
-    "perftest": "node ./tests/performance/deepCopy.js",
     "lint-fix": "eslint --ignore-path .gitignore --fix .",
-    "lint": "eslint --ignore-path .gitignore ."
+    "lint": "eslint --ignore-path .gitignore .",
+    "bundle": "rollup --config tools/rollup.config.js",
+    "prepublishOnly": "npm t && npm run bundle"
+  },
+  "dependencies": {
+    "@sindresorhus/slugify": "^2.1.0",
+    "html-escaper": "^3.0.3",
+    "into-stream": "^7.0.0",
+    "is-whitespace-character": "^2.0.0",
+    "multistream": "^4.1.0"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^21.0.1",
+    "@rollup/plugin-node-resolve": "^13.0.6",
     "ava": "^3.15.0",
     "eslint": "^7.23.0",
-    "eslint-config-red": "^1.8.1"
+    "eslint-config-red": "^1.8.1",
+    "rollup": "^2.59.0"
   },
   "eslintConfig": {
     "extends": [
@@ -28,7 +39,8 @@
     "env": {
       "es2021": true,
       "browser": true,
-      "node": true
+      "node": true,
+      "deno": true
     }
   },
   "ava": {
@@ -41,6 +53,7 @@
   },
   "files": [
     "source",
+    "built",
     "readme.md",
     "license.txt",
     "changelog.md"
@@ -55,12 +68,5 @@
     "string",
     "html",
     "minify"
-  ],
-  "dependencies": {
-    "@sindresorhus/slugify": "^2.1.0",
-    "html-escaper": "^3.0.3",
-    "into-stream": "^7.0.0",
-    "is-whitespace-character": "^2.0.0",
-    "multistream": "^4.1.0"
-  }
+  ]
 }

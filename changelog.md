@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.0
+
+MarkdownParser split into
+
+ * MarkdownParserNode.js import this to have have it like 1.16.0
+ * MarkdownParserWeb.js
+ * MarkdownParser.js (actual implementation)
+ * MardownParserWeb.js cannot be used directly in Deno or Web because it has bare imports
+ * add built/MarkdownParserWeb.es.js which has all the imports inlined and can directly be used by Deno or Web
+
 ## 1.16.0
 
 Change how MarkdownParser works internally

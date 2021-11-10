@@ -1,6 +1,5 @@
-export { MarkdownParser };
+export { start, transform, flush };
 
-import { Transform } from "stream";
 import { isWhitespaceCharacter as isWhitespace } from "is-whitespace-character";
 import { escape as escapeHtml } from 'html-escaper';
 import slugify from "@sindresorhus/slugify";
@@ -140,829 +139,823 @@ const replaceThings = (text, links) => {
     return text;
 };
 
-class MarkdownParser extends Transform {
-    constructor(options = {}) {
-        super({ readableObjectMode: true });
-        this._refresh();
-        Object.assign(this, DEFAULT_OPTIONS, options);
-        this.inside = [];
-        this.items = [];
-        this.listTypeOrdered = [];
-        this.currentString = ``;
+const _escapeHtml = function (c) {
+    // does not escape " in the midddle of a p
+    if (!needsToBeEscaped.includes(c)) {
+        return c;
     }
-
-    _refresh() {
-        this.firstCharcater = true;
-        this.indexes = [];
-        this.state = STATE.TEXT;
-        this.lastCharacter = ``;
-        this.linkText = ``;
-        this.rawDescription = ``;
-        this._currentTagName = ``;
-        this.inlineRaw = true;
-        this.titleLevel = 0;
-        this.skipStart = 0;
-        this.skipEnd = 0;
-        this.closingBackTicks = 0;
-        this.newLined = false;
-    }
-
-    _selfBuffer(x) {
-        this.currentString = `${this.currentString}${x}`;
-    }
-
-    _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = this.indexes.length) {
-        if (this.skipStart) {
-            currentStringStart += this.skipStart;
-            this.skipStart = 0;
-        }
-        if (!this.indexes.length || start === end) {
-            return escapeHtml(this.currentString.substring(currentStringStart, currentStringEnd));
-        }
+    return escapeHtml(c);
+};
 
 
-        const links = scanForLinks(this.currentString, currentStringStart, currentStringEnd);
-        const removed = removeIndexesInsideLinks(this.indexes, links);
-        end -= removed;
-        let htmlOutput = ``;
-        let lastUsed = this.indexes[start]?.i ?? currentStringEnd;
-        if (lastUsed > currentStringStart) {
-            // substring does weird things if end is smaller than start
-            htmlOutput = `${replaceThings(escapeHtml(this.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart))), links)}`;
-        }
-        let j;
-        const nextCharacter = () => {
-            return this.indexes[j + 1]?.c;
-        }
-        const nextIndex = () => {
-            return this.indexes[j + 1]?.i;
-        }
-        const findClosingPair = (after, targetC) => {
-            let result;
-            let firstFound = false;
-            let firstIndex = 0;
-            for (let k = after; k < end; k += 1) {
-                const { i, c } = this.indexes[k];
-                if (c === targetC) {
-                    if (!firstFound || firstIndex + 1 !== i) {
-                        firstFound = true;
-                        firstIndex = i;
-                        result = k;
+const start = function (controller, options = {}) {
+    Object.assign(controller, {
+        _refresh() {
+            controller.firstCharcater = true;
+            controller.indexes = [];
+            controller.state = STATE.TEXT;
+            controller.lastCharacter = ``;
+            controller.linkText = ``;
+            controller.rawDescription = ``;
+            controller._currentTagName = ``;
+            controller.inlineRaw = true;
+            controller.titleLevel = 0;
+            controller.skipStart = 0;
+            controller.skipEnd = 0;
+            controller.closingBackTicks = 0;
+            controller.newLined = false;
+        },
+
+        _selfBuffer(x) {
+            controller.currentString = `${controller.currentString}${x}`;
+        },
+
+        _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = controller.indexes.length) {
+            if (controller.skipStart) {
+                currentStringStart += controller.skipStart;
+                controller.skipStart = 0;
+            }
+            if (!controller.indexes.length || start === end) {
+                return escapeHtml(controller.currentString.substring(currentStringStart, currentStringEnd));
+            }
+
+
+            const links = scanForLinks(controller.currentString, currentStringStart, currentStringEnd);
+            const removed = removeIndexesInsideLinks(controller.indexes, links);
+            end -= removed;
+            let htmlOutput = ``;
+            let lastUsed = controller.indexes[start]?.i ?? currentStringEnd;
+            if (lastUsed > currentStringStart) {
+                // substring does weird things if end is smaller than start
+                htmlOutput = `${replaceThings(escapeHtml(controller.currentString.substring(currentStringStart, Math.max(lastUsed, currentStringStart))), links)}`;
+            }
+            let j;
+            const nextCharacter = () => {
+                return controller.indexes[j + 1]?.c;
+            }
+            const nextIndex = () => {
+                return controller.indexes[j + 1]?.i;
+            }
+            const findClosingPair = (after, targetC) => {
+                let result;
+                let firstFound = false;
+                let firstIndex = 0;
+                for (let k = after; k < end; k += 1) {
+                    const { i, c } = controller.indexes[k];
+                    if (c === targetC) {
+                        if (!firstFound || firstIndex + 1 !== i) {
+                            firstFound = true;
+                            firstIndex = i;
+                            result = k;
+                        } else {
+                            return result;
+                        }
                     } else {
-                        return result;
+                        firstFound = false;
                     }
-                } else {
-                    firstFound = false;
                 }
             }
-        }
-        const findLastClosingTriple = (after, targetC) => {
-            let result;
-            let confirmedResult;
-            let firstFound = false;
-            let firstIndex = 0;
-            let secondFound = false;
-            let secondIndex = false;
-            let thirdIndex;
-            for (let k = after; k < end; k += 1) {
-                const { i, c } = this.indexes[k];
-                if (c === targetC) {
-                    if (!firstFound || (!secondFound && firstIndex + 1 !== i)) {
-                        firstFound = true;
-                        firstIndex = i;
-                        result = k;
-                    } else if (!secondFound) {
-                        secondFound = true;
-                        secondIndex = i;
-                    } else if (secondIndex + 1 === i) {
-                        confirmedResult = result;
-                        thirdIndex = i;
-                    } else if (confirmedResult) {
-                        if (i === thirdIndex + 1) {
-                            // 4 or 5  back ticks in a row
-                            confirmedResult += 1;
-                            thirdIndex += 1;
+            const findLastClosingTriple = (after, targetC) => {
+                let result;
+                let confirmedResult;
+                let firstFound = false;
+                let firstIndex = 0;
+                let secondFound = false;
+                let secondIndex = false;
+                let thirdIndex;
+                for (let k = after; k < end; k += 1) {
+                    const { i, c } = controller.indexes[k];
+                    if (c === targetC) {
+                        if (!firstFound || (!secondFound && firstIndex + 1 !== i)) {
+                            firstFound = true;
+                            firstIndex = i;
+                            result = k;
+                        } else if (!secondFound) {
+                            secondFound = true;
+                            secondIndex = i;
+                        } else if (secondIndex + 1 === i) {
+                            confirmedResult = result;
+                            thirdIndex = i;
+                        } else if (confirmedResult) {
+                            if (i === thirdIndex + 1) {
+                                // 4 or 5  back ticks in a row
+                                confirmedResult += 1;
+                                thirdIndex += 1;
+                            } else {
+                                break;
+                            }
                         } else {
-                            break;
+                            firstFound = false;
+                            secondFound = false;
                         }
                     } else {
                         firstFound = false;
                         secondFound = false;
                     }
-                } else {
-                    firstFound = false;
-                    secondFound = false;
                 }
+                return confirmedResult;
             }
-            return confirmedResult;
-        }
-        const findClosingSimple = (after, targetC) => {
-            for (let k = after; k < end; k += 1) {
-                const { i, c } = this.indexes[k];
-                if (c === targetC) {
-                    return k
-                }
-            }
-        }
-
-        for (j = start; j < end; j += 1) {
-            const { i, c, u } = this.indexes[j];
-            if (u) {
-                continue;
-            } else {
-                this.indexes[j].u = true;
-            }
-            if (c === `~`) {
-                if (nextCharacter() === `~` && nextIndex() === i + 1) {
-                    // DELETED
-                    // todo do not search inside raw stuff
-                    const closingPairIndex = findClosingPair(j + 2, `~`);
-                    if (closingPairIndex === undefined) {
-                        // does not have a closing pair
-                        j += 1;
-
-                    } else {
-                        this.indexes[j + 1].u = true;
-                        this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex + 1].u = true;
-                        htmlOutput = `${htmlOutput}<del>${replaceThings(
-                            this._closeInlineStuff(
-                                nextIndex() + 1,
-                                this.indexes[closingPairIndex].i,
-                                j + 2,
-                                closingPairIndex,
-                            ), links)}</del>`;
-                        j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i + 2
+            const findClosingSimple = (after, targetC) => {
+                for (let k = after; k < end; k += 1) {
+                    const { i, c } = controller.indexes[k];
+                    if (c === targetC) {
+                        return k
                     }
-
-                } else {
-
                 }
-            } else if (c === `[`) {
-                // link
-                const closingIndex = findClosingSimple(j + 1, `]`);
-                if (closingIndex !== undefined) {
-                    const closingPosition = this.indexes[closingIndex].i;
-                    const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
-                    if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
-                        const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
-                        if (closingParenthese !== undefined) {
-                            // regular link
-                            this.indexes[closingIndex].u = true;
-                            htmlOutput = `${htmlOutput}<a href="${this.linkHrefHook(
-                                this.currentString.substring(this.indexes[openingParenthese].i + 1, this.indexes[closingParenthese].i)
-                            )}">${this._closeInlineStuff(
-                                i + 1,
-                                this.indexes[closingIndex].i,
-                                j + 1,
-                                closingIndex,
-                            )}</a>`;
-                            j = closingParenthese;
-                            lastUsed = this.indexes[closingParenthese].i + 1;
+            }
+
+            for (j = start; j < end; j += 1) {
+                const { i, c, u } = controller.indexes[j];
+                if (u) {
+                    continue;
+                } else {
+                    controller.indexes[j].u = true;
+                }
+                if (c === `~`) {
+                    if (nextCharacter() === `~` && nextIndex() === i + 1) {
+                        // DELETED
+                        // todo do not search inside raw stuff
+                        const closingPairIndex = findClosingPair(j + 2, `~`);
+                        if (closingPairIndex === undefined) {
+                            // does not have a closing pair
+                            j += 1;
+
+                        } else {
+                            controller.indexes[j + 1].u = true;
+                            controller.indexes[closingPairIndex].u = true;
+                            controller.indexes[closingPairIndex + 1].u = true;
+                            htmlOutput = `${htmlOutput}<del>${replaceThings(
+                                controller._closeInlineStuff(
+                                    nextIndex() + 1,
+                                    controller.indexes[closingPairIndex].i,
+                                    j + 2,
+                                    closingPairIndex,
+                                ), links)}</del>`;
+                            j = closingPairIndex + 1;
+                            lastUsed = controller.indexes[closingPairIndex].i + 2
                         }
+
                     } else {
-                        const openingBracket = findClosingSimple(closingIndex + 1, `[`);
-                        if (openingBracket !== undefined && this.indexes[openingBracket].i === closingPosition + 1) {
-                            const closingBracket = findClosingSimple(openingBracket + 1, `]`);
-                            if (closingBracket !== undefined) {
-                                // reference link
-                                this.indexes[closingIndex].u = true;
-                                const slug = slugify(this.currentString.substring(this.indexes[openingBracket].i + 1, this.indexes[closingBracket].i));
-                                htmlOutput = `${htmlOutput}<a href="#${slug}">${this._closeInlineStuff(
+
+                    }
+                } else if (c === `[`) {
+                    // link
+                    const closingIndex = findClosingSimple(j + 1, `]`);
+                    if (closingIndex !== undefined) {
+                        const closingPosition = controller.indexes[closingIndex].i;
+                        const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
+                        if (openingParenthese !== undefined && controller.indexes[openingParenthese].i === closingPosition + 1) {
+                            const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
+                            if (closingParenthese !== undefined) {
+                                // regular link
+                                controller.indexes[closingIndex].u = true;
+                                htmlOutput = `${htmlOutput}<a href="${controller.linkHrefHook(
+                                    controller.currentString.substring(controller.indexes[openingParenthese].i + 1, controller.indexes[closingParenthese].i)
+                                )}">${controller._closeInlineStuff(
                                     i + 1,
-                                    this.indexes[closingIndex].i,
+                                    controller.indexes[closingIndex].i,
                                     j + 1,
                                     closingIndex,
                                 )}</a>`;
-                                j = closingBracket;
-                                lastUsed = this.indexes[closingBracket].i + 1
+                                j = closingParenthese;
+                                lastUsed = controller.indexes[closingParenthese].i + 1;
                             }
                         } else {
-                            // reference from a previous link
-                            const colon = findClosingSimple(closingIndex + 1, `:`);
-                            if (colon !== undefined && this.indexes[colon].i === closingPosition + 1) {
-                                const slug = slugify(this.currentString.substring(i + 1, closingPosition + 1));
-                                htmlOutput = `<a id="${slug}" href="${this.linkHrefHook(
-                                    this.currentString.substring(this.indexes[colon].i + 2, currentStringEnd).trim()
-                                )}">${this.currentString.substring(i + 1, closingPosition)
-                                    }</a>`;
-                                j = end;
-                                lastUsed = currentStringEnd
-                                break;
-                            } else {
-                                // reference link with only text
-                                this.indexes[closingIndex].u = true;
-                                const slug = slugify(this.currentString.substring(i + 1, closingPosition));
-                                htmlOutput = `${htmlOutput}<a href="#${slug}">${this.currentString.substring(i + 1, closingPosition)
-                                    }</a>`;
-                                j = closingIndex;
-                                lastUsed = closingPosition + 1
-                            }
-                        }
-                    }
-
-
-                } else {
-
-                }
-            } else if (c === `!`) {
-                const openingBracketIndex = findClosingSimple(j + 1, `[`);
-                if (openingBracketIndex) {
-                    const closingIndex = findClosingSimple(openingBracketIndex + 1, `]`);
-                    if (closingIndex !== undefined) {
-                        const closingPosition = this.indexes[closingIndex].i;
-                        const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
-                        if (openingParenthese !== undefined && this.indexes[openingParenthese].i === closingPosition + 1) {
-                            const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
-                            if (closingParenthese !== undefined) {
-                                // regular image
-                                this.indexes[closingIndex].u = true;
-                                const src = this.currentString.substring(this.indexes[openingParenthese].i + 1, this.indexes[closingParenthese].i);
-                                const alt = this._closeInlineStuff(
-                                    this.indexes[openingBracketIndex].i + 1,
-                                    this.indexes[closingIndex].i,
-                                    j + 2,
-                                    closingIndex,
-                                );
-                                let output;
-                                if (this.mediaHook) {
-                                    output = this.mediaHook(src, alt);
-                                } else {
-                                    output = `<img alt="${alt}" src="${src}">`;
+                            const openingBracket = findClosingSimple(closingIndex + 1, `[`);
+                            if (openingBracket !== undefined && controller.indexes[openingBracket].i === closingPosition + 1) {
+                                const closingBracket = findClosingSimple(openingBracket + 1, `]`);
+                                if (closingBracket !== undefined) {
+                                    // reference link
+                                    controller.indexes[closingIndex].u = true;
+                                    const slug = slugify(controller.currentString.substring(controller.indexes[openingBracket].i + 1, controller.indexes[closingBracket].i));
+                                    htmlOutput = `${htmlOutput}<a href="#${slug}">${controller._closeInlineStuff(
+                                        i + 1,
+                                        controller.indexes[closingIndex].i,
+                                        j + 1,
+                                        closingIndex,
+                                    )}</a>`;
+                                    j = closingBracket;
+                                    lastUsed = controller.indexes[closingBracket].i + 1
                                 }
-                                htmlOutput = `${htmlOutput}${output}`;
-                                j = closingParenthese;
-                                lastUsed = this.indexes[closingParenthese].i + 1
+                            } else {
+                                // reference from a previous link
+                                const colon = findClosingSimple(closingIndex + 1, `:`);
+                                if (colon !== undefined && controller.indexes[colon].i === closingPosition + 1) {
+                                    const slug = slugify(controller.currentString.substring(i + 1, closingPosition + 1));
+                                    htmlOutput = `<a id="${slug}" href="${controller.linkHrefHook(
+                                        controller.currentString.substring(controller.indexes[colon].i + 2, currentStringEnd).trim()
+                                    )}">${controller.currentString.substring(i + 1, closingPosition)
+                                        }</a>`;
+                                    j = end;
+                                    lastUsed = currentStringEnd
+                                    break;
+                                } else {
+                                    // reference link with only text
+                                    controller.indexes[closingIndex].u = true;
+                                    const slug = slugify(controller.currentString.substring(i + 1, closingPosition));
+                                    htmlOutput = `${htmlOutput}<a href="#${slug}">${controller.currentString.substring(i + 1, closingPosition)
+                                        }</a>`;
+                                    j = closingIndex;
+                                    lastUsed = closingPosition + 1
+                                }
                             }
                         }
-                    }
-                } else {
-                    // no need, the 
-                    // htmlOutput = `${htmlOutput}${c}`;
-                }
 
-            } else if (c === `*`) {
-                if (nextCharacter() === `*` && nextIndex() === i + 1) {
-                    // strong
-                    const closingPairIndex = findClosingPair(j + 2, `*`);
-                    if (closingPairIndex) {
-                        this.indexes[j + 1].u = true;
-                        this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex + 1].u = true;
-                        htmlOutput = `${htmlOutput}<strong>${replaceThings(this._closeInlineStuff(
-                            nextIndex() + 1,
-                            this.indexes[closingPairIndex].i,
-                            j + 2,
-                            closingPairIndex,
-                        ), links)}</strong>`;
-                        j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i + 2
+
                     } else {
-                        j += 1;
+
                     }
-                } else {
-                    // emphasis
-                    const nextStar = findClosingSimple(j + 1, `*`);
-                    if (nextStar) {
-                        this.indexes[nextStar].u = true;
-                        htmlOutput = `${htmlOutput}<em>${replaceThings(this._closeInlineStuff(
-                            i + 1,
-                            this.indexes[nextStar].i,
-                            j + 1,
-                            nextStar,
-                        ), links)}</em>`;
-                        j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i + 1;
-                    }
-                }
-            } else if (c === `_`) {
-                // todo deduplicate with above
-                if (nextCharacter() === `_` && nextIndex() === i + 1) {
-                    // strong
-                    const closingPairIndex = findClosingPair(j + 2, `_`);
-                    if (closingPairIndex) {
-                        this.indexes[j + 1].u = true;
-                        this.indexes[closingPairIndex].u = true;
-                        this.indexes[closingPairIndex + 1].u = true;
-                        htmlOutput = `${htmlOutput}<strong>${replaceThings(this._closeInlineStuff(
-                            nextIndex() + 1,
-                            this.indexes[closingPairIndex].i,
-                            j + 2,
-                            closingPairIndex,
-                        ), links)}</strong>`;
-                        j = closingPairIndex + 1;
-                        lastUsed = this.indexes[closingPairIndex].i + 2
+                } else if (c === `!`) {
+                    const openingBracketIndex = findClosingSimple(j + 1, `[`);
+                    if (openingBracketIndex) {
+                        const closingIndex = findClosingSimple(openingBracketIndex + 1, `]`);
+                        if (closingIndex !== undefined) {
+                            const closingPosition = controller.indexes[closingIndex].i;
+                            const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
+                            if (openingParenthese !== undefined && controller.indexes[openingParenthese].i === closingPosition + 1) {
+                                const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
+                                if (closingParenthese !== undefined) {
+                                    // regular image
+                                    controller.indexes[closingIndex].u = true;
+                                    const src = controller.currentString.substring(controller.indexes[openingParenthese].i + 1, controller.indexes[closingParenthese].i);
+                                    const alt = controller._closeInlineStuff(
+                                        controller.indexes[openingBracketIndex].i + 1,
+                                        controller.indexes[closingIndex].i,
+                                        j + 2,
+                                        closingIndex,
+                                    );
+                                    let output;
+                                    if (controller.mediaHook) {
+                                        output = controller.mediaHook(src, alt);
+                                    } else {
+                                        output = `<img alt="${alt}" src="${src}">`;
+                                    }
+                                    htmlOutput = `${htmlOutput}${output}`;
+                                    j = closingParenthese;
+                                    lastUsed = controller.indexes[closingParenthese].i + 1
+                                }
+                            }
+                        }
                     } else {
-                        j += 1;
+                        // no need, the 
+                        // htmlOutput = `${htmlOutput}${c}`;
                     }
-                } else {
-                    const nextStar = findClosingSimple(j + 1, `_`);
-                    if (nextStar) {
-                        this.indexes[nextStar].u = true;
-                        htmlOutput = `${htmlOutput}<em>${replaceThings(this._closeInlineStuff(
-                            i + 1,
-                            this.indexes[nextStar].i,
-                            j + 1,
-                            nextStar,
-                        ), links)}</em>`;
-                        j = nextStar + 1;
-                        lastUsed = this.indexes[nextStar].i + 1;
+
+                } else if (c === `*`) {
+                    if (nextCharacter() === `*` && nextIndex() === i + 1) {
+                        // strong
+                        const closingPairIndex = findClosingPair(j + 2, `*`);
+                        if (closingPairIndex) {
+                            controller.indexes[j + 1].u = true;
+                            controller.indexes[closingPairIndex].u = true;
+                            controller.indexes[closingPairIndex + 1].u = true;
+                            htmlOutput = `${htmlOutput}<strong>${replaceThings(controller._closeInlineStuff(
+                                nextIndex() + 1,
+                                controller.indexes[closingPairIndex].i,
+                                j + 2,
+                                closingPairIndex,
+                            ), links)}</strong>`;
+                            j = closingPairIndex + 1;
+                            lastUsed = controller.indexes[closingPairIndex].i + 2
+                        } else {
+                            j += 1;
+                        }
+                    } else {
+                        // emphasis
+                        const nextStar = findClosingSimple(j + 1, `*`);
+                        if (nextStar) {
+                            controller.indexes[nextStar].u = true;
+                            htmlOutput = `${htmlOutput}<em>${replaceThings(controller._closeInlineStuff(
+                                i + 1,
+                                controller.indexes[nextStar].i,
+                                j + 1,
+                                nextStar,
+                            ), links)}</em>`;
+                            j = nextStar + 1;
+                            lastUsed = controller.indexes[nextStar].i + 1;
+                        }
                     }
-                }
-            } else if (c === `\``) {
-                let wastriplebacktick = false;
-                const restOfTripleOpening = findClosingPair(j + 1, `\``);
-                if (this.indexes[restOfTripleOpening]?.i === i + 1) {
-                    const startOfTripleClosing = findLastClosingTriple(j + 3, `\``);
-                    if (startOfTripleClosing) {
-                        this.indexes[startOfTripleClosing].u = true;
-                        this.indexes[startOfTripleClosing + 2].u = true;
-                        this.indexes[startOfTripleClosing + 1].u = true;
-                        htmlOutput = `${htmlOutput}<code>${escapeHtml(this.currentString.substring(i + 3, this.indexes[startOfTripleClosing].i))
-                            }</code>`;
-                        j = startOfTripleClosing + 3;
-                        lastUsed = this.indexes[startOfTripleClosing].i + 3;
-                        wastriplebacktick = true;
+                } else if (c === `_`) {
+                    // todo deduplicate with above
+                    if (nextCharacter() === `_` && nextIndex() === i + 1) {
+                        // strong
+                        const closingPairIndex = findClosingPair(j + 2, `_`);
+                        if (closingPairIndex) {
+                            controller.indexes[j + 1].u = true;
+                            controller.indexes[closingPairIndex].u = true;
+                            controller.indexes[closingPairIndex + 1].u = true;
+                            htmlOutput = `${htmlOutput}<strong>${replaceThings(controller._closeInlineStuff(
+                                nextIndex() + 1,
+                                controller.indexes[closingPairIndex].i,
+                                j + 2,
+                                closingPairIndex,
+                            ), links)}</strong>`;
+                            j = closingPairIndex + 1;
+                            lastUsed = controller.indexes[closingPairIndex].i + 2
+                        } else {
+                            j += 1;
+                        }
+                    } else {
+                        const nextStar = findClosingSimple(j + 1, `_`);
+                        if (nextStar) {
+                            controller.indexes[nextStar].u = true;
+                            htmlOutput = `${htmlOutput}<em>${replaceThings(controller._closeInlineStuff(
+                                i + 1,
+                                controller.indexes[nextStar].i,
+                                j + 1,
+                                nextStar,
+                            ), links)}</em>`;
+                            j = nextStar + 1;
+                            lastUsed = controller.indexes[nextStar].i + 1;
+                        }
                     }
-                }
-                if (!wastriplebacktick) {
-                    const nextBackTick = findClosingSimple(j + 1, `\``);
-                    if (nextBackTick) {
-                        //raw
-                        this.indexes[nextBackTick].u = true;
-                        htmlOutput = `${htmlOutput}<code>${escapeHtml(this.currentString.substring(i + 1, this.indexes[nextBackTick].i))
-                            }</code>`;
-                        j = nextBackTick + 1;
-                        lastUsed = this.indexes[nextBackTick].i + 1;
+                } else if (c === `\``) {
+                    let wastriplebacktick = false;
+                    const restOfTripleOpening = findClosingPair(j + 1, `\``);
+                    if (controller.indexes[restOfTripleOpening]?.i === i + 1) {
+                        const startOfTripleClosing = findLastClosingTriple(j + 3, `\``);
+                        if (startOfTripleClosing) {
+                            controller.indexes[startOfTripleClosing].u = true;
+                            controller.indexes[startOfTripleClosing + 2].u = true;
+                            controller.indexes[startOfTripleClosing + 1].u = true;
+                            htmlOutput = `${htmlOutput}<code>${escapeHtml(controller.currentString.substring(i + 3, controller.indexes[startOfTripleClosing].i))
+                                }</code>`;
+                            j = startOfTripleClosing + 3;
+                            lastUsed = controller.indexes[startOfTripleClosing].i + 3;
+                            wastriplebacktick = true;
+                        }
                     }
-                }
-            } else if (false) {
-            }
-        }
-        return `${htmlOutput}${replaceThings(escapeHtml(this.currentString.substring(lastUsed, Math.max(currentStringEnd))), links)}`;
-
-    }
-
-    _closeCurrent(toPush, i = this.currentString.length) {
-        let skip;
-        if (this.skipEnd) {
-            skip = this.skipEnd;
-            i -= skip;
-        }
-        let inlineOutput;
-        if (this.state === STATE.TEXT) {
-            this.skipStart -= 1;
-        }
-        if (this.state !== STATE.HORIZONTAL_RULE && this.state !== STATE.CLOSING_RAW && this.state !== STATE.AFTER_EMPTY_HTML) {
-            inlineOutput = this._closeInlineStuff(0, i).trim();
-        }
-        switch (this.state) {
-            case STATE.HORIZONTAL_RULE:
-                toPush.push(`<hr>`);
-                this._refresh();
-                this.state = STATE.TEXT;
-                break;
-            case STATE.TEXT:
-                if (inlineOutput) {
-                    toPush.push(`<p>${inlineOutput}</p>`);
-                }
-                this._refresh();
-                break;
-                
-            case STATE.AFTER_EMPTY_HTML:
-                toPush.push(this.currentString.substring(0, i));
-                this._refresh();
-                break;
-            case STATE.QUOTE:
-                toPush.push(`<blockquote><p>${inlineOutput}</p></blockquote>`);
-                this._refresh();
-                this.state = STATE.TEXT;
-                break;
-            case STATE.LIST_ITEM_TEXT:
-                this.items.push(inlineOutput);
-                this._refresh();
-            case STATE.LIST_ITEM_END:
-                const wasOrdered = this.listTypeOrdered.pop();
-                let listContainerHtml;
-                if (wasOrdered) {
-                    listContainerHtml = `ol`;
-                } else {
-                    listContainerHtml = `ul`;
-                }
-                toPush.push(`<${listContainerHtml}>`);
-                this.items.forEach(item => {
-                    toPush.push(`<li>${item}</li>`);
-                });
-                toPush.push(`</${listContainerHtml}>`);
-                this.items = [];
-                this._refresh();
-                this.state = STATE.TEXT;
-                break;
-            case STATE.UNDERTITLE1:
-            case STATE.UNDERTITLE2:
-            case STATE.TITLE_TEXT:
-                toPush.push(`<h${this.titleLevel}>${inlineOutput}</h${this.titleLevel}>`);
-                this._refresh();
-                this.state = STATE.TEXT;
-                break;
-            case STATE.CLOSING_RAW:
-                let classText = ``;
-                if (this.rawDescription) {
-                    classText = ` class="${this.languagePrefix}${escapeHtml(this.rawDescription)}"`;
-                }
-
-                let rawString = this.currentString.substring(this.rawDescriptionEnd, i - 3).trim();
-                let currentInlineString;
-
-                let highlighted;
-                if (this.highlight) {
-                    highlighted = this.highlight(rawString, this.rawDescription);
-                }
-                if (highlighted) {
-                    currentInlineString = `<pre><code${classText}>${highlighted}</code></pre>`;
-                } else {
-                    currentInlineString = `<pre><code${classText}>${escapeHtml(rawString)}</code></pre>`;
-                }
-
-                toPush.push(currentInlineString);
-                this.state = STATE.TEXT;
-
-                this.rawDescription = ``;
-                this.closingBackTicks = 0;
-                break;
-
-            default:
-                return;
-
-        }
-    }
-
-    _noteWorthyCharacters(c, i) {
-        if (mardkownNoteWorthyCharacters.includes(c)) {
-            this.indexes.push({ c, i });
-            return true;
-        }
-        return false;
-    }
-
-    _escapeHtml(c) {
-        // does not escape " in the midddle of a p
-        if (!needsToBeEscaped.includes(c)) {
-            return c;
-        }
-        return escapeHtml(c);
-    }
-
-    _transform(buffer, encoding, done) {
-        const bufferAsString = String(buffer);
-        this._selfBuffer(bufferAsString);
-        const asString = this.currentString;
-        const { length } = asString;
-        const toPush = []; // avoid pushing character by character
-        let iAdjust = 0; // as we cut off the beginning of this.currentString, i has to be adjusted
-        let rawStartedAt = 0;
-        let rawDescriptionStart = 0;
-
-        for (let i = 0; i < length; i += 1) {
-            let c = asString[i];
-            if (this.state === STATE.CLOSING_RAW) {
-                if (c === `\``) {
-                    this.closingBackTicks += 1;
-                    continue;
-                } else {
-                    this._closeCurrent(toPush, i - iAdjust);
-                    this.currentString = asString.substr(i);
-                    iAdjust = i;
-                    this._refresh();
+                    if (!wastriplebacktick) {
+                        const nextBackTick = findClosingSimple(j + 1, `\``);
+                        if (nextBackTick) {
+                            //raw
+                            controller.indexes[nextBackTick].u = true;
+                            htmlOutput = `${htmlOutput}<code>${escapeHtml(controller.currentString.substring(i + 1, controller.indexes[nextBackTick].i))
+                                }</code>`;
+                            j = nextBackTick + 1;
+                            lastUsed = controller.indexes[nextBackTick].i + 1;
+                        }
+                    }
+                } else if (false) {
                 }
             }
-            switch (this.state) {
+            return `${htmlOutput}${replaceThings(escapeHtml(controller.currentString.substring(lastUsed, Math.max(currentStringEnd))), links)}`;
+
+        },
+
+        _closeCurrent(toPush, i = controller.currentString.length) {
+            let skip;
+            if (controller.skipEnd) {
+                skip = controller.skipEnd;
+                i -= skip;
+            }
+            let inlineOutput;
+            if (controller.state === STATE.TEXT) {
+                controller.skipStart -= 1;
+            }
+            if (controller.state !== STATE.HORIZONTAL_RULE && controller.state !== STATE.CLOSING_RAW && controller.state !== STATE.AFTER_EMPTY_HTML) {
+                inlineOutput = controller._closeInlineStuff(0, i).trim();
+            }
+            switch (controller.state) {
+                case STATE.HORIZONTAL_RULE:
+                    toPush.push(`<hr>`);
+                    controller._refresh();
+                    controller.state = STATE.TEXT;
+                    break;
+                case STATE.TEXT:
+                    if (inlineOutput) {
+                        toPush.push(`<p>${inlineOutput}</p>`);
+                    }
+                    controller._refresh();
+                    break;
+
+                case STATE.AFTER_EMPTY_HTML:
+                    toPush.push(controller.currentString.substring(0, i));
+                    controller._refresh();
+                    break;
+                case STATE.QUOTE:
+                    toPush.push(`<blockquote><p>${inlineOutput}</p></blockquote>`);
+                    controller._refresh();
+                    controller.state = STATE.TEXT;
+                    break;
+                case STATE.LIST_ITEM_TEXT:
+                    controller.items.push(inlineOutput);
+                    controller._refresh();
+                case STATE.LIST_ITEM_END:
+                    const wasOrdered = controller.listTypeOrdered.pop();
+                    let listContainerHtml;
+                    if (wasOrdered) {
+                        listContainerHtml = `ol`;
+                    } else {
+                        listContainerHtml = `ul`;
+                    }
+                    toPush.push(`<${listContainerHtml}>`);
+                    controller.items.forEach(item => {
+                        toPush.push(`<li>${item}</li>`);
+                    });
+                    toPush.push(`</${listContainerHtml}>`);
+                    controller.items = [];
+                    controller._refresh();
+                    controller.state = STATE.TEXT;
+                    break;
                 case STATE.UNDERTITLE1:
                 case STATE.UNDERTITLE2:
-                    this.skipEnd += 1;
-                    if (c === `\n`) {
-                        this._closeCurrent(toPush, i - iAdjust + 1);
-                        this.currentString = asString.substr(i + 1);
+                case STATE.TITLE_TEXT:
+                    toPush.push(`<h${controller.titleLevel}>${inlineOutput}</h${controller.titleLevel}>`);
+                    controller._refresh();
+                    controller.state = STATE.TEXT;
+                    break;
+                case STATE.CLOSING_RAW:
+                    let classText = ``;
+                    if (controller.rawDescription) {
+                        classText = ` class="${controller.languagePrefix}${escapeHtml(controller.rawDescription)}"`;
+                    }
+
+                    let rawString = controller.currentString.substring(controller.rawDescriptionEnd, i - 3).trim();
+                    let currentInlineString;
+
+                    let highlighted;
+                    if (controller.highlight) {
+                        highlighted = controller.highlight(rawString, controller.rawDescription);
+                    }
+                    if (highlighted) {
+                        currentInlineString = `<pre><code${classText}>${highlighted}</code></pre>`;
+                    } else {
+                        currentInlineString = `<pre><code${classText}>${escapeHtml(rawString)}</code></pre>`;
+                    }
+
+                    toPush.push(currentInlineString);
+                    controller.state = STATE.TEXT;
+
+                    controller.rawDescription = ``;
+                    controller.closingBackTicks = 0;
+                    break;
+
+                default:
+                    return;
+
+            }
+        },
+
+        _noteWorthyCharacters(c, i) {
+            if (mardkownNoteWorthyCharacters.includes(c)) {
+                controller.indexes.push({ c, i });
+                return true;
+            }
+            return false;
+        }
+    })
+    controller._refresh();
+    Object.assign(controller, DEFAULT_OPTIONS, options);
+    controller.inside = [];
+    controller.items = [];
+    controller.listTypeOrdered = [];
+    controller.currentString = ``;
+}
+
+const transform = function (bufferAsString, controller) {
+    controller._selfBuffer(bufferAsString);
+    const asString = controller.currentString;
+    const { length } = asString;
+    const toPush = []; // avoid pushing character by character
+    let iAdjust = 0; // as we cut off the beginning of controller.currentString, i has to be adjusted
+    let rawStartedAt = 0;
+    let rawDescriptionStart = 0;
+
+    for (let i = 0; i < length; i += 1) {
+        let c = asString[i];
+        if (controller.state === STATE.CLOSING_RAW) {
+            if (c === `\``) {
+                controller.closingBackTicks += 1;
+                continue;
+            } else {
+                controller._closeCurrent(toPush, i - iAdjust);
+                controller.currentString = asString.substr(i);
+                iAdjust = i;
+                controller._refresh();
+            }
+        }
+        switch (controller.state) {
+            case STATE.UNDERTITLE1:
+            case STATE.UNDERTITLE2:
+                controller.skipEnd += 1;
+                if (c === `\n`) {
+                    controller._closeCurrent(toPush, i - iAdjust + 1);
+                    controller.currentString = asString.substr(i + 1);
+                    iAdjust = i + 1;
+                }
+                break;
+            case STATE.HORIZONTAL_RULE:
+                if (c === `\n`) {
+                    controller._closeCurrent(toPush, i - iAdjust);
+                    controller.currentString = asString.substr(i + 1);
+                    iAdjust = i + 1;
+                } else {
+                    controller.skipEnd += 1;
+                }
+                break;
+            case STATE.POTENTIAL_HTML:
+                if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && controller.lastCharacter === `<`) {
+                    // was not html
+                    controller.state = STATE.TEXT;
+                    controller.skipStart -= +5;
+                    controller.firstCharcater = false;
+                } else if (c === `>`) {
+                    let currentTagName = ``;
+                    for (let j = controller.tagNameStart; j < asString.length; j += 1) {
+                        if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
+                            break; // todo skip whitespace < img>
+                        }
+                        currentTagName = `${currentTagName}${asString[j]}`;
+                    }
+
+                    if (emptyElements.includes(currentTagName)) {
+                        controller.state = STATE.AFTER_EMPTY_HTML;
+                        controller.currentString = asString.substr(controller.tagNameStart - 1);
+                        controller._closeCurrent(toPush, i + 1 - (controller.tagNameStart - 1));
+                        controller.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
+                    } else {
+                        controller._currentTagName = currentTagName;
+                        controller.state = STATE.INISIDE_HTML;
                     }
-                    break;
-                case STATE.HORIZONTAL_RULE:
-                    if (c === `\n`) {
-                        this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i + 1);
+
+                } else {
+                    // controller._selfBuffer(c);
+                }
+
+                controller.lastCharacter = c;
+                break;
+            case STATE.INISIDE_HTML:
+                if (c === `>`) {
+                    const closingTagName = asString.slice(i - controller._currentTagName.length, i)
+                    if (controller._currentTagName === closingTagName) {
+
+
+                        controller.state = STATE.AFTER_EMPTY_HTML;
+                        controller.currentString = asString.substr(controller.tagNameStart - 1);
+                        controller._closeCurrent(toPush, i + 1 - iAdjust - (controller.tagNameStart - 1));
+                        controller.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     } else {
-                        this.skipEnd += 1;
                     }
-                    break;
-                case STATE.POTENTIAL_HTML:
-                    if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && this.lastCharacter === `<`) {
-                        // was not html
-                        this.state = STATE.TEXT;
-                        this.skipStart -= +5;
-                        this.firstCharcater  = false;
-                    } else if (c === `>`) {
-                        let currentTagName = ``;
-                        for (let j = this.tagNameStart; j < asString.length; j += 1) {
-                            if (!isAsciiLetter(asString[j]) && asString[j] !== `-`) {
-                                break; // todo skip whitespace < img>
-                            }
-                            currentTagName = `${currentTagName}${asString[j]}`;
-                        }
-                        
-                        if (emptyElements.includes(currentTagName)) {
-                            this.state = STATE.AFTER_EMPTY_HTML;
-                            this.currentString = asString.substr(this.tagNameStart - 1);
-                            this._closeCurrent(toPush, i + 1 -  (this.tagNameStart - 1));
-                            this.currentString = asString.substr(i + 1);
-                            iAdjust = i + 1;
-                        } else {
-                            this._currentTagName = currentTagName;
-                            this.state = STATE.INISIDE_HTML;
-                        }
+                } else {
 
+                }
+                break;
+
+            case STATE.TEXT:
+                if (c === `\n`) {
+                    if (controller.newLined) {
+                        controller._closeCurrent(toPush, i - iAdjust);
+                        controller.currentString = asString.substr(i + 1);
+                        iAdjust = i + 1;
                     } else {
-                        // this._selfBuffer(c);
+                        if (controller.firstCharcater) {
+                            controller.skipStart += 1;
+                        }
+                        controller.newLined = true;
                     }
-                    
-                    this.lastCharacter = c;
-                    break;
-                case STATE.INISIDE_HTML:
-                    if (c === `>`) {
-                        const closingTagName = asString.slice(i-this._currentTagName.length, i)
-                        if (this._currentTagName === closingTagName) {
-
-                            
-                            this.state = STATE.AFTER_EMPTY_HTML;
-                            this.currentString = asString.substr(this.tagNameStart - 1);
-                            this._closeCurrent(toPush, i + 1 - iAdjust - (this.tagNameStart - 1));
-                            this.currentString = asString.substr(i + 1);
-                            iAdjust = i + 1;
+                } else if (c === `=` && controller.newLined &&
+                    // avoid empty titles
+                    !controller.firstCharcater) {
+                    controller.state = STATE.UNDERTITLE1;
+                    controller.skipStart -= 1;
+                    controller.titleLevel = 1;
+                    controller.skipEnd = 1;
+                } else if (c === `-` && controller.newLined &&
+                    // avoid empty titles
+                    !controller.firstCharcater) {
+                    controller.state = STATE.UNDERTITLE2;
+                    controller.skipStart -= 1;
+                    controller.titleLevel = 2;
+                    controller.skipEnd = 1;
+                } else {
+                    if (controller.firstCharcater) {
+                        if (c === `#`) {
+                            controller.state = STATE.START_TITLE;
+                            controller.titleLevel = 1;
+                        } else if (c === `*` || c === `-`) {
+                            controller.state = STATE.LIST_ITEM_START;
+                            controller.lastCharacter = c;
+                        } else if (c === `0` || c === `1`) {
+                            controller.state = STATE.ORDERED_LIST_START;
+                            controller.lastCharacter = c;
+                        } else if (c === `>`) {
+                            controller.state = STATE.QUOTE;
+                            iAdjust += 1;
+                            controller.skipStart += 1;
+                        } else if (c === `\``) {
+                            controller.state = STATE.START_RAW;
+                            controller.backTicks = 1;
+                            rawStartedAt = i;
+                        } else if (isWhitespace(c)) {
+                            controller.skipStart += 1;
+                        } else if (c === `<`) {
+                            controller.state = STATE.POTENTIAL_HTML;
+                            controller.lastCharacter = c;
+                            controller.tagNameStart = i + 1;
                         } else {
-                        }
-                    } else {
-
-                    }
-                    break;
-
-                case STATE.TEXT:
-                    if (c === `\n`) {
-                        if (this.newLined) {
-                            this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = asString.substr(i + 1);
-                            iAdjust = i + 1;
-                        } else {
-                            if (this.firstCharcater) {
-                                this.skipStart += 1;
+                            // c = controller._escapeHtml(c); // todo when closing
+                            if (controller.newLined) {
+                                // controller._selfBuffer(` `);
+                                controller.newLined = false;
                             }
-                            this.newLined = true;
-                        }
-                    } else if (c === `=` && this.newLined &&
-                        // avoid empty titles
-                        !this.firstCharcater) {
-                        this.state = STATE.UNDERTITLE1;
-                        this.skipStart -= 1;
-                        this.titleLevel = 1;
-                        this.skipEnd = 1;
-                    } else if (c === `-` && this.newLined &&
-                        // avoid empty titles
-                        !this.firstCharcater) {
-                        this.state = STATE.UNDERTITLE2;
-                        this.skipStart -= 1;
-                        this.titleLevel = 2;
-                        this.skipEnd = 1;
-                    } else {
-                        if (this.firstCharcater) {
-                            if (c === `#`) {
-                                this.state = STATE.START_TITLE;
-                                this.titleLevel = 1;
-                            } else if (c === `*` || c === `-`) {
-                                this.state = STATE.LIST_ITEM_START;
-                                this.lastCharacter = c;
-                            } else if (c === `0` || c === `1`) {
-                                this.state = STATE.ORDERED_LIST_START;
-                                this.lastCharacter = c;
-                            } else if (c === `>`) {
-                                this.state = STATE.QUOTE;
-                                iAdjust += 1;
-                                this.skipStart += 1;
-                            } else if (c === `\``) {
-                                this.state = STATE.START_RAW;
-                                this.backTicks = 1;
-                                rawStartedAt = i;
-                            } else if (isWhitespace(c)) {
-                                this.skipStart += 1;
-                            } else if (c === `<`) {
-                                this.state = STATE.POTENTIAL_HTML;
-                                this.lastCharacter = c;
-                                this.tagNameStart = i + 1;
-                            } else {
-                                // c = this._escapeHtml(c); // todo when closing
-                                if (this.newLined) {
-                                    // this._selfBuffer(` `);
-                                    this.newLined = false;
-                                }
-                                this.firstCharcater = false
+                            controller.firstCharcater = false
 
-                                if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                                    continue;
-                                }
-                            }
-                        } else {
-                            // c = this._escapeHtml(c); // todo when closing
-                            if (this.newLined && !isWhitespace(c)) {
-                                // this._selfBuffer(` `); // todo
-                                this.newLined = false;
-                            }
-                            if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                                this.firstCharcater = false;
+                            if (controller._noteWorthyCharacters(c, i - iAdjust)) {
                                 continue;
                             }
                         }
-                    }
-                    break;
-                case STATE.QUOTE:
-                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                        continue;
-                    }
-                    if (c === `\n`) {
-                        if (this.newLined) {
-                            this._closeCurrent(toPush, i - iAdjust);
-                            this.currentString = asString.substr(i + 1);
-                            iAdjust = i + 1;
-                        } else {
-                            this.newLined = true;
-                        }
                     } else {
-                        if (this.newLined) {
-                            this.newLined = false;
+                        // c = controller._escapeHtml(c); // todo when closing
+                        if (controller.newLined && !isWhitespace(c)) {
+                            // controller._selfBuffer(` `); // todo
+                            controller.newLined = false;
+                        }
+                        if (controller._noteWorthyCharacters(c, i - iAdjust)) {
+                            controller.firstCharcater = false;
+                            continue;
                         }
                     }
-                    break;
-                case STATE.ORDERED_LIST_START:
-                    if (Number.isFinite(Number(this.lastCharacter))) {
-                        if (c === `.`) {
-                            this.lastCharacter = c;
-                        } else {
-                            // force go loop to go again with current character
-                            i -= 1;
-                            this.state = STATE.TEXT;
-                        }
-                    } else if (this.lastCharacter === `.`) {
-                        if (c === ` `) {
-                            this.listTypeOrdered.push(true);
-                            this.state = STATE.LIST_ITEM_TEXT;
-
-                            this.skipStart += 3;
-                            iAdjust = i - this.skipStart + 1;
-
-
-
-                        } else {
-                            // force go loop to go again with current character
-                            i -= 2;
-                            this.state = STATE.TEXT;
-                        }
+                }
+                break;
+            case STATE.QUOTE:
+                if (controller._noteWorthyCharacters(c, i - iAdjust)) {
+                    continue;
+                }
+                if (c === `\n`) {
+                    if (controller.newLined) {
+                        controller._closeCurrent(toPush, i - iAdjust);
+                        controller.currentString = asString.substr(i + 1);
+                        iAdjust = i + 1;
+                    } else {
+                        controller.newLined = true;
                     }
-                    break;
-                case STATE.LIST_ITEM_START:
+                } else {
+                    if (controller.newLined) {
+                        controller.newLined = false;
+                    }
+                }
+                break;
+            case STATE.ORDERED_LIST_START:
+                if (Number.isFinite(Number(controller.lastCharacter))) {
+                    if (c === `.`) {
+                        controller.lastCharacter = c;
+                    } else {
+                        // force go loop to go again with current character
+                        i -= 1;
+                        controller.state = STATE.TEXT;
+                    }
+                } else if (controller.lastCharacter === `.`) {
                     if (c === ` `) {
-                        this.listTypeOrdered.push(false);
-                        this.state = STATE.LIST_ITEM_TEXT;
+                        controller.listTypeOrdered.push(true);
+                        controller.state = STATE.LIST_ITEM_TEXT;
 
-                        this.skipStart += 2;
-                        iAdjust = i - this.skipStart + 1;
+                        controller.skipStart += 3;
+                        iAdjust = i - controller.skipStart + 1;
+
+
 
                     } else {
-                        if (c === `-`) {
-                            this._refresh();
-                            this.state = STATE.HORIZONTAL_RULE;
-                            this.skipEnd = 2;
-                        } else {
-                            // revert 
-                            this.indexes.push({ c: this.lastCharacter, i: i - 1 - iAdjust });
-                            // force go loop to go again with current character
-                            i -= 1;
-                            this.state = STATE.TEXT;
-                        }
+                        // force go loop to go again with current character
+                        i -= 2;
+                        controller.state = STATE.TEXT;
                     }
-                    break;
-                case STATE.LIST_ITEM_TEXT:
-                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                        continue;
-                    }
-                    if (c === `\n`) {
-                        // do not this._closeCurrent(toPush, i);
-                        // since it will also close the list (to handle lists at the end of markdown without line break
-                        const skipStart = this.skipStart;
-                        const inlineOutput = this._closeInlineStuff(0, i - iAdjust + 1).trim();
-                        this.items.push(inlineOutput);
-                        this.currentString = asString.substr(i + 1);
-                        iAdjust = i + 1 + skipStart;
-                        this._refresh();
-                        this.state = STATE.LIST_ITEM_END;
-                    }
-                    break;
-                case STATE.TITLE_TEXT:
-                    if (this._noteWorthyCharacters(c, i - iAdjust)) {
-                        continue;
-                    }
-                    if (c === `\n`) {
-                        this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i + 1);
-                        iAdjust = i + 1;
-                    }
-                    break;
-                case STATE.LIST_ITEM_END:
-                    if (c === `\n`) {
-                        this._closeCurrent(toPush, i - iAdjust);
-                        this.currentString = asString.substr(i + 1);
-                        iAdjust = i + 1;
-                    } else if (isWhitespace(c)) {
-                        this.skipStart += 1;
-                    } else if (c === `-` || c === `*`) {
-                        this.state = STATE.LIST_ITEM_START;
-                    } else if (Number.isFinite(Number(c))) {
-                        this.state = STATE.ORDERED_LIST_START;
-                        this.lastCharacter = c;
-                    }
-                    break;
-                case STATE.START_TITLE:
-                    if (c === `#`) {
-                        this.titleLevel += 1;
-                    } else if (isWhitespace(c)) {
-                        this.state = STATE.TITLE_TEXT;
-                        this.skipStart += this.titleLevel + 1;
-                    } else {
-                        //malformed title
-                        this.state = STATE.TEXT;
-                    }
-                    break;
+                }
+                break;
+            case STATE.LIST_ITEM_START:
+                if (c === ` `) {
+                    controller.listTypeOrdered.push(false);
+                    controller.state = STATE.LIST_ITEM_TEXT;
 
-                case STATE.START_RAW:
-                    if (c === `\``) {
-                        this.backTicks += 1;
-                        if (this.backTicks === 3) {
-                            this.state = STATE.RAW_DESCRIPTION;
-                            rawDescriptionStart = i + 1;
-                        }
+                    controller.skipStart += 2;
+                    iAdjust = i - controller.skipStart + 1;
+
+                } else {
+                    if (c === `-`) {
+                        controller._refresh();
+                        controller.state = STATE.HORIZONTAL_RULE;
+                        controller.skipEnd = 2;
                     } else {
-                        for (let q = rawStartedAt; q < i; q += 1) {
-                            this.indexes.push({ c: `\``, i: q - iAdjust });
-                        }
-                        this.state = STATE.TEXT;
-                        this.backTicks = 0;
+                        // revert 
+                        controller.indexes.push({ c: controller.lastCharacter, i: i - 1 - iAdjust });
+                        // force go loop to go again with current character
+                        i -= 1;
+                        controller.state = STATE.TEXT;
                     }
-                    break;
-                case STATE.RAW_DESCRIPTION:
-                    if (c === `\n`) {
-                        this.rawDescription = asString.substring(rawDescriptionStart, i);
-                        this.rawDescriptionEnd = i + 1 - iAdjust;
-                        this.state = STATE.RAW;
-                    } else if (!isAsciiLetter(c)) {
-                        // not in the description but in the raw text all along
-                        for (let q = rawStartedAt; q < rawStartedAt + 3; q += 1) {
-                            this.indexes.push({ c: `\``, i: q - iAdjust });
-                        }
-                        this.state = STATE.TEXT;
-                        this.backTicks = 0;
+                }
+                break;
+            case STATE.LIST_ITEM_TEXT:
+                if (controller._noteWorthyCharacters(c, i - iAdjust)) {
+                    continue;
+                }
+                if (c === `\n`) {
+                    // do not controller._closeCurrent(toPush, i);
+                    // since it will also close the list (to handle lists at the end of markdown without line break
+                    const skipStart = controller.skipStart;
+                    const inlineOutput = controller._closeInlineStuff(0, i - iAdjust + 1).trim();
+                    controller.items.push(inlineOutput);
+                    controller.currentString = asString.substr(i + 1);
+                    iAdjust = i + 1 + skipStart;
+                    controller._refresh();
+                    controller.state = STATE.LIST_ITEM_END;
+                }
+                break;
+            case STATE.TITLE_TEXT:
+                if (controller._noteWorthyCharacters(c, i - iAdjust)) {
+                    continue;
+                }
+                if (c === `\n`) {
+                    controller._closeCurrent(toPush, i - iAdjust);
+                    controller.currentString = asString.substr(i + 1);
+                    iAdjust = i + 1;
+                }
+                break;
+            case STATE.LIST_ITEM_END:
+                if (c === `\n`) {
+                    controller._closeCurrent(toPush, i - iAdjust);
+                    controller.currentString = asString.substr(i + 1);
+                    iAdjust = i + 1;
+                } else if (isWhitespace(c)) {
+                    controller.skipStart += 1;
+                } else if (c === `-` || c === `*`) {
+                    controller.state = STATE.LIST_ITEM_START;
+                } else if (Number.isFinite(Number(c))) {
+                    controller.state = STATE.ORDERED_LIST_START;
+                    controller.lastCharacter = c;
+                }
+                break;
+            case STATE.START_TITLE:
+                if (c === `#`) {
+                    controller.titleLevel += 1;
+                } else if (isWhitespace(c)) {
+                    controller.state = STATE.TITLE_TEXT;
+                    controller.skipStart += controller.titleLevel + 1;
+                } else {
+                    //malformed title
+                    controller.state = STATE.TEXT;
+                }
+                break;
+
+            case STATE.START_RAW:
+                if (c === `\``) {
+                    controller.backTicks += 1;
+                    if (controller.backTicks === 3) {
+                        controller.state = STATE.RAW_DESCRIPTION;
+                        rawDescriptionStart = i + 1;
                     }
-                    break;
-                case STATE.RAW:
-                    if (c === `\``) {
-                        this.closingBackTicks += 1;
-                        if (this.closingBackTicks === this.backTicks) {
-                            this.state = STATE.CLOSING_RAW;
-                        }
-                    } else {
-                        if (this.closingBackTicks) {
-                            this.closingBackTicks = 0;
-                        }
+                } else {
+                    for (let q = rawStartedAt; q < i; q += 1) {
+                        controller.indexes.push({ c: `\``, i: q - iAdjust });
                     }
-                    break;
-                default:
-                    done(`Invalid state ${this.state}`);
-                    return;
-            }
+                    controller.state = STATE.TEXT;
+                    controller.backTicks = 0;
+                }
+                break;
+            case STATE.RAW_DESCRIPTION:
+                if (c === `\n`) {
+                    controller.rawDescription = asString.substring(rawDescriptionStart, i);
+                    controller.rawDescriptionEnd = i + 1 - iAdjust;
+                    controller.state = STATE.RAW;
+                } else if (!isAsciiLetter(c)) {
+                    // not in the description but in the raw text all along
+                    for (let q = rawStartedAt; q < rawStartedAt + 3; q += 1) {
+                        controller.indexes.push({ c: `\``, i: q - iAdjust });
+                    }
+                    controller.state = STATE.TEXT;
+                    controller.backTicks = 0;
+                }
+                break;
+            case STATE.RAW:
+                if (c === `\``) {
+                    controller.closingBackTicks += 1;
+                    if (controller.closingBackTicks === controller.backTicks) {
+                        controller.state = STATE.CLOSING_RAW;
+                    }
+                } else {
+                    if (controller.closingBackTicks) {
+                        controller.closingBackTicks = 0;
+                    }
+                }
+                break;
+            default:
+                throw (`Invalid state ${controller.state}`);
         }
-
-        if (toPush.length) {
-            this.push(toPush.join(``));
-        }
-
-        done();
-        return buffer.length;
     }
 
-    _flush(done) {
-        const toPush = [];
-        this._closeCurrent(toPush);
-        toPush.forEach(string => {
-            this.push(string);
-        });
-        this._refresh();
-        done();
+    if (toPush.length) {
+        controller.push(toPush.join(``));
     }
 
+};
+
+const flush = function (controller) {
+    const toPush = [];
+    controller._closeCurrent(toPush);
+    toPush.forEach(string => {
+        controller.push(string);
+    });
+    controller._refresh();
 }
+

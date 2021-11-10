@@ -1,5 +1,4 @@
 node_modules
-tests/html.min.html
-tests/readme.html
-tests/manual/html.min.html
-tests/manual/readme.html
+tests/output/
+built/
+
