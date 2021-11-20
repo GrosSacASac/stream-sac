@@ -1,5 +1,5 @@
 import { streamifyStringFunction } from "../../source/streamifyStringFunction.js";
-// import { pipeline } from "stream";
+// import { pipeline } from "node:stream";
 
 const encode = c => {
     return String.fromCharCode(c.charCodeAt(0) + 1);

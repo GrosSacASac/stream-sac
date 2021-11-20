@@ -1,6 +1,6 @@
 export { HtmlMinifier };
 
-import { Transform } from "stream";
+import { Transform } from "node:stream";
 import {isWhitespaceCharacter as isWhitespace} from "is-whitespace-character";
 
 

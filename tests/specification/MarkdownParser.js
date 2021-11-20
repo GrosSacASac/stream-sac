@@ -1,8 +1,8 @@
+import { finished } from "node:stream/promises";
 import test from "ava";
+import slugify from "@sindresorhus/slugify";
 import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
-import { finished } from "stream/promises";
-import slugify from "@sindresorhus/slugify";
 //todo change order (block then inline)
 
 

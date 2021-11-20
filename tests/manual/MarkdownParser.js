@@ -1,5 +1,5 @@
-import fs from "fs";
-import { pipeline } from "stream";
+import fs from "node:fs";
+import { pipeline } from "node:stream";
 import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 
 const source = `./readme.md`;

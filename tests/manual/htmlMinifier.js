@@ -1,6 +1,6 @@
+import fs from "node:fs";
+import { pipeline } from "node:stream";
 import { HtmlMinifier } from "../../source/html/HtmlMinifier.js";
-import fs from "fs";
-import { pipeline } from "stream";
 
 
 const source = `./tests/manual/html.html`;

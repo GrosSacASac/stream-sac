@@ -1,6 +1,6 @@
 export { concatAsStream };
 
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 import MultiStream from "multistream";
 import intoStream from 'into-stream';
 

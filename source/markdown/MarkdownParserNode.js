@@ -1,6 +1,6 @@
 export { MarkdownParser };
 
-import { Transform } from "stream";
+import { Transform } from "node:stream";
 import { flush, transform, start } from "./MarkdownParser.js";
 
 

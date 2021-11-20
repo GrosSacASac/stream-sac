@@ -1,6 +1,6 @@
 export { streamifyStringFunction };
 
-import { Transform } from "stream";
+import { Transform } from "node:stream";
 
 
 const streamifyStringFunction = (stringFunction) => {
