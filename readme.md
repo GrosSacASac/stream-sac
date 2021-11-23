@@ -53,9 +53,10 @@ import {
 } from "stream-sac/source/markdown/MarkdownParserNode.js";
 
 const markdownStream = new MarkdownParser({
-    // optional
+    // all optional
     languagePrefix: `language-`,
     highlight: function (str, lang) {
+        // import hljs to get code highlighting
         if (lang && hljs.getLanguage(lang)) {
             try {
             return hljs.highlight(lang, str).value;
@@ -63,6 +64,17 @@ const markdownStream = new MarkdownParser({
         }
     
         return ``;
+    },
+    // for example to resize images on the fly
+    mediaHook: function (src, alt) {
+        return `<img alt="${alt}" src="${src}">`;
+    },
+    // for example to disable all external links 
+    linkHrefHook: function (src) {
+        if (!src.startsWith("https://example.com")) {
+            return "#";
+        }
+        return src;
     }
 });
 ```
