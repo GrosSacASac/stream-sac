@@ -738,9 +738,11 @@ const transform = function (bufferAsString, controller) {
                         } else if (c === `*` || c === `-`) {
                             controller.state = STATE.LIST_ITEM_START;
                             controller.lastCharacter = c;
+                            controller.firstCharcater = false;
                         } else if (c === `0` || c === `1`) {
                             controller.state = STATE.ORDERED_LIST_START;
                             controller.lastCharacter = c;
+                            controller.firstCharcater = false;
                         } else if (c === `>`) {
                             controller.state = STATE.QUOTE;
                             iAdjust += 1;
@@ -749,6 +751,7 @@ const transform = function (bufferAsString, controller) {
                             controller.state = STATE.START_RAW;
                             controller.backTicks = 1;
                             rawStartedAt = i;
+                            controller.firstCharcater = false;
                         } else if (isWhitespace(c)) {
                             controller.skipStart += 1;
                         } else if (c === `<`) {
@@ -761,20 +764,17 @@ const transform = function (bufferAsString, controller) {
                                 // controller._selfBuffer(` `);
                                 controller.newLined = false;
                             }
-                            controller.firstCharcater = false
+                            controller.firstCharcater = false;
 
                             if (controller._noteWorthyCharacters(c, i - iAdjust)) {
                                 continue;
                             }
                         }
                     } else {
-                        // c = controller._escapeHtml(c); // todo when closing
                         if (controller.newLined && !isWhitespace(c)) {
-                            // controller._selfBuffer(` `); // todo
                             controller.newLined = false;
                         }
                         if (controller._noteWorthyCharacters(c, i - iAdjust)) {
-                            controller.firstCharcater = false;
                             continue;
                         }
                     }
