@@ -842,3 +842,19 @@ test(`h3 then link inside li`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<h3>Related</h3><ul><li><a href="https://www.npmjs.com/package/from2">from2</a></li></ul>`));
 });
+
+
+
+test(`em inside quote`, async t => {
+    const markdownParser = new MarkdownParser();
+    const quote = `An eye for an eye leaves the whole world blind`
+    const author = `Gandhi`
+    concatAsStream([`> *${quote}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<blockquote><p><em>${quote}</em></p></blockquote>`));
+});
