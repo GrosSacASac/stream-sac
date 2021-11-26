@@ -172,7 +172,7 @@ const start = function (controller, options = {}) {
 
         _closeInlineStuff(currentStringStart, currentStringEnd, start = 0, end = controller.indexes.length) {
             if (controller.skipStart) {
-                currentStringStart += controller.skipStart;
+                currentStringStart += Math.max(0, controller.skipStart);
                 controller.skipStart = 0;
             }
             if (!controller.indexes.length || start === end) {
