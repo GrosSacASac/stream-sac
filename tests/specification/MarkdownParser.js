@@ -874,7 +874,7 @@ test(`em inside quote`, async t => {
 
 test(`ems inside quote`, async t => {
     const markdownParser = new MarkdownParser();
-    const parts = [`a`, `b`, `c`, `d`, `e`];
+    const parts = [`a`, `b`, `c`,];
     
     concatAsStream([`> *${parts[0]}*${parts[1]}*${parts[2]}*`]).pipe(markdownParser);
 
@@ -884,4 +884,18 @@ test(`ems inside quote`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<blockquote><p><em>${parts[0]}</em>${parts[1]}<em>${parts[2]}</em></p></blockquote>`));
+});
+
+test(`strongs inside quote`, async t => {
+    const markdownParser = new MarkdownParser();
+    const parts = [`a`, `b`, `c`,];
+    
+    concatAsStream([`**${parts[0]}**${parts[1]}**${parts[2]}**`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><strong>${parts[0]}</strong>${parts[1]}<strong>${parts[2]}</strong></p>`));
 });
