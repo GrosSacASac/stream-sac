@@ -273,8 +273,8 @@ const start = function (controller, options = {}) {
                 }
                 if (j - 1 > start && (controller.indexes[j].i - controller.indexes[j-1].i > 1)) {
                     // handle standalone text in between worthy character groups
-                    htmlOutput = `${htmlOutput}${escapeHtml(controller.currentString.substring(controller.indexes[j-1].i + 1, controller.indexes[j].i))}`;
-                    lastUsed = controller.indexes[j].i - 1
+                    htmlOutput = `${htmlOutput}${escapeHtml(controller.currentString.substring(lastUsed, controller.indexes[j].i))}`;
+                    lastUsed = controller.indexes[j].i
                 }
                 if (c === `~`) {
                     if (nextCharacter() === `~` && nextIndex() === i + 1) {
