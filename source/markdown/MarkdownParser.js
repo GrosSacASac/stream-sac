@@ -431,7 +431,7 @@ const start = function (controller, options = {}) {
                                 j + 1,
                                 nextStar,
                             ), links)}</em>`;
-                            j = nextStar + 1;
+                            j = nextStar;
                             lastUsed = controller.indexes[nextStar].i + 1;
                         }
                     }
@@ -465,7 +465,7 @@ const start = function (controller, options = {}) {
                                 j + 1,
                                 nextStar,
                             ), links)}</em>`;
-                            j = nextStar + 1;
+                            j = nextStar;
                             lastUsed = controller.indexes[nextStar].i + 1;
                         }
                     }
@@ -480,7 +480,7 @@ const start = function (controller, options = {}) {
                             controller.indexes[startOfTripleClosing + 1].u = true;
                             htmlOutput = `${htmlOutput}<code>${escapeHtml(controller.currentString.substring(i + 3, controller.indexes[startOfTripleClosing].i))
                                 }</code>`;
-                            j = startOfTripleClosing + 3;
+                            j = startOfTripleClosing + 2;
                             lastUsed = controller.indexes[startOfTripleClosing].i + 3;
                             wastriplebacktick = true;
                         }
@@ -492,7 +492,7 @@ const start = function (controller, options = {}) {
                             controller.indexes[nextBackTick].u = true;
                             htmlOutput = `${htmlOutput}<code>${escapeHtml(controller.currentString.substring(i + 1, controller.indexes[nextBackTick].i))
                                 }</code>`;
-                            j = nextBackTick + 1;
+                            j = nextBackTick;
                             lastUsed = controller.indexes[nextBackTick].i + 1;
                         }
                     }
