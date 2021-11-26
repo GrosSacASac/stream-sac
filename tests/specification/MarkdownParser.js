@@ -39,20 +39,24 @@ ${t2}`]).pipe(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
-test(`quote`, async t => {
-    const markdownParser = new MarkdownParser();
-    const quote = `An eye for an eye leaves the whole world blind`
-    const author = `Gandhi`
-    concatAsStream([`> ${quote}
+['', ' '].forEach(potentialSpaceBefore => {
+    ['', ' '].forEach(potentialSpaceAfter => {
+        test(`quote with Space Before ${potentialSpaceBefore === ` `} and space after ${potentialSpaceAfter === ` `}`, async t => {
+            const markdownParser = new MarkdownParser();
+            const quote = `An eye for an eye leaves the whole world blind`
+            const author = `Gandhi`
+            concatAsStream([`${potentialSpaceBefore}>${potentialSpaceAfter}${quote}
 
 ${author}`]).pipe(markdownParser);
-
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
-        forceBuffer = `${forceBuffer}${x}`;
+        
+            let forceBuffer = ``
+            markdownParser.on('data', (x) => {
+                forceBuffer = `${forceBuffer}${x}`;
+            });
+            await finished(markdownParser);
+            t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
+        });
     });
-    await finished(markdownParser);
-    t.is(forceBuffer, (`<blockquote><p>${quote}</p></blockquote><p>${author}</p>`));
 });
 
 // test(`inline quote`, async t => {
