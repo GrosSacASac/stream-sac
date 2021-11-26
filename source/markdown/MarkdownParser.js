@@ -781,7 +781,7 @@ const transform = function (bufferAsString, controller) {
                 }
                 break;
             case STATE.QUOTE:
-                if (controller._noteWorthyCharacters(c, i - iAdjust)) {
+                if (controller._noteWorthyCharacters(c, i - iAdjust+1)) {
                     continue;
                 }
                 if (c === `\n`) {
