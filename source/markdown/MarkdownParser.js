@@ -271,7 +271,7 @@ const start = function (controller, options = {}) {
                 } else {
                     controller.indexes[j].u = true;
                 }
-                if (j - 1 > 0 && (controller.indexes[j].i - controller.indexes[j-1].i > 1)) {
+                if (j - 1 > start && (controller.indexes[j].i - controller.indexes[j-1].i > 1)) {
                     // handle standalone text in between worthy character groups
                     htmlOutput = `${htmlOutput}${escapeHtml(controller.currentString.substring(controller.indexes[j-1].i + 1, controller.indexes[j].i))}`;
                     lastUsed = controller.indexes[j].i - 1
