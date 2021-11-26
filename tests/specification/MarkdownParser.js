@@ -579,6 +579,19 @@ test(`emphasis`, async t => {
     t.is(forceBuffer, (`<p><em>${x}</em></p>`));
 });
 
+test(`multiple emphasis`, async t => {
+    const markdownParser = new MarkdownParser();
+    const x = `notice me`
+    concatAsStream([`*${x}**${x}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><em>${x}</em><em>${x}</em></p>`));
+});
+
 test(`emphasis alternative syntax`, async t => {
     const markdownParser = new MarkdownParser();
     const x = `notice me`
@@ -848,7 +861,6 @@ test(`h3 then link inside li`, async t => {
 test(`em inside quote`, async t => {
     const markdownParser = new MarkdownParser();
     const quote = `An eye for an eye leaves the whole world blind`
-    const author = `Gandhi`
     concatAsStream([`> *${quote}*`]).pipe(markdownParser);
 
     let forceBuffer = ``
@@ -857,4 +869,19 @@ test(`em inside quote`, async t => {
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<blockquote><p><em>${quote}</em></p></blockquote>`));
+});
+
+
+test(`ems inside quote`, async t => {
+    const markdownParser = new MarkdownParser();
+    const parts = [`a`, `b`, `c`, `d`, `e`];
+    
+    concatAsStream([`> *${parts[0]}*${parts[1]}*${parts[2]}*`]).pipe(markdownParser);
+
+    let forceBuffer = ``
+    markdownParser.on('data', (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<blockquote><p><em>${parts[0]}</em>${parts[1]}<em>${parts[2]}</em></p></blockquote>`));
 });
