@@ -822,7 +822,7 @@ test(`link inside ordered list`, async t => {
 });
 
 
-test(`h3 and link inside li`, async t => {
+test(`h3 then link inside li`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`
 ### Related
