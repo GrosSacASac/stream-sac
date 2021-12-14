@@ -11,9 +11,9 @@ const isAsciiLetter = (c) => {
 };
 
 const needsToBeEscaped = [
-    "&",
-    "<",
-    ">",
+    `&`,
+    `<`,
+    `>`,
 ];
 
 const emptyElements = [
@@ -50,7 +50,7 @@ const mardkownNoteWorthyCharacters = [
     `:`,
     // `<`,
     // `>`,
-]
+];
 
 
 let i = 0;
@@ -94,7 +94,7 @@ const DEFAULT_OPTIONS = {
 const scanForLinks = (plainText, start, stop) => {
     const words = plainText.split(` `);
     return words.reduce((links, word) => {
-        if (word.startsWith("https://") || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
+        if (word.startsWith(`https://`) || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
             const index = plainText.indexOf(word);
             const indexEnd = index + word.length;
             if (index >= start && indexEnd <= stop) {
@@ -131,7 +131,7 @@ const removeIndexesInsideLinks = (indexes, links) => {
         linksI += 1;
     }
     return removed;
-}
+};
 const replaceThings = (text, links) => {
     links.forEach(({ original, replacement }) => {
         text = text.replace(original, replacement);
@@ -192,10 +192,10 @@ const start = function (controller, options = {}) {
             let j;
             const nextCharacter = () => {
                 return controller.indexes[j + 1]?.c;
-            }
+            };
             const nextIndex = () => {
                 return controller.indexes[j + 1]?.i;
-            }
+            };
             const findClosingPair = (after, targetC) => {
                 let result;
                 let firstFound = false;
@@ -214,7 +214,7 @@ const start = function (controller, options = {}) {
                         firstFound = false;
                     }
                 }
-            }
+            };
             const findLastClosingTriple = (after, targetC) => {
                 let result;
                 let confirmedResult;
@@ -254,15 +254,15 @@ const start = function (controller, options = {}) {
                     }
                 }
                 return confirmedResult;
-            }
+            };
             const findClosingSimple = (after, targetC) => {
                 for (let k = after; k < end; k += 1) {
                     const { i, c } = controller.indexes[k];
                     if (c === targetC) {
-                        return k
+                        return k;
                     }
                 }
-            }
+            };
 
             for (j = start; j < end; j += 1) {
                 const { i, c, u } = controller.indexes[j];
@@ -271,10 +271,10 @@ const start = function (controller, options = {}) {
                 } else {
                     controller.indexes[j].u = true;
                 }
-                if (j - 1 > start && (controller.indexes[j].i - controller.indexes[j-1].i > 1)) {
+                if (j - 1 > start && (controller.indexes[j].i - controller.indexes[j - 1].i > 1)) {
                     // handle standalone text in between worthy character groups
                     htmlOutput = `${htmlOutput}${escapeHtml(controller.currentString.substring(lastUsed, controller.indexes[j].i))}`;
-                    lastUsed = controller.indexes[j].i
+                    lastUsed = controller.indexes[j].i;
                 }
                 if (c === `~`) {
                     if (nextCharacter() === `~` && nextIndex() === i + 1) {
@@ -297,7 +297,7 @@ const start = function (controller, options = {}) {
                                     closingPairIndex,
                                 ), links)}</del>`;
                             j = closingPairIndex + 1;
-                            lastUsed = controller.indexes[closingPairIndex].i + 2
+                            lastUsed = controller.indexes[closingPairIndex].i + 2;
                         }
 
                     } else {
@@ -315,7 +315,7 @@ const start = function (controller, options = {}) {
                                 // regular link
                                 controller.indexes[closingIndex].u = true;
                                 htmlOutput = `${htmlOutput}<a href="${controller.linkHrefHook(
-                                    controller.currentString.substring(controller.indexes[openingParenthese].i + 1, controller.indexes[closingParenthese].i)
+                                    controller.currentString.substring(controller.indexes[openingParenthese].i + 1, controller.indexes[closingParenthese].i),
                                 )}">${controller._closeInlineStuff(
                                     i + 1,
                                     controller.indexes[closingIndex].i,
@@ -340,7 +340,7 @@ const start = function (controller, options = {}) {
                                         closingIndex,
                                     )}</a>`;
                                     j = closingBracket;
-                                    lastUsed = controller.indexes[closingBracket].i + 1
+                                    lastUsed = controller.indexes[closingBracket].i + 1;
                                 }
                             } else {
                                 // reference from a previous link
@@ -348,11 +348,11 @@ const start = function (controller, options = {}) {
                                 if (colon !== undefined && controller.indexes[colon].i === closingPosition + 1) {
                                     const slug = slugify(controller.currentString.substring(i + 1, closingPosition + 1));
                                     htmlOutput = `<a id="${slug}" href="${controller.linkHrefHook(
-                                        controller.currentString.substring(controller.indexes[colon].i + 2, currentStringEnd).trim()
+                                        controller.currentString.substring(controller.indexes[colon].i + 2, currentStringEnd).trim(),
                                     )}">${controller.currentString.substring(i + 1, closingPosition)
                                         }</a>`;
                                     j = end;
-                                    lastUsed = currentStringEnd
+                                    lastUsed = currentStringEnd;
                                     break;
                                 } else {
                                     // reference link with only text
@@ -361,7 +361,7 @@ const start = function (controller, options = {}) {
                                     htmlOutput = `${htmlOutput}<a href="#${slug}">${controller.currentString.substring(i + 1, closingPosition)
                                         }</a>`;
                                     j = closingIndex;
-                                    lastUsed = closingPosition + 1
+                                    lastUsed = closingPosition + 1;
                                 }
                             }
                         }
@@ -397,7 +397,7 @@ const start = function (controller, options = {}) {
                                     }
                                     htmlOutput = `${htmlOutput}${output}`;
                                     j = closingParenthese;
-                                    lastUsed = controller.indexes[closingParenthese].i + 1
+                                    lastUsed = controller.indexes[closingParenthese].i + 1;
                                 }
                             }
                         }
@@ -421,7 +421,7 @@ const start = function (controller, options = {}) {
                                 closingPairIndex,
                             ), links)}</strong>`;
                             j = closingPairIndex + 1;
-                            lastUsed = controller.indexes[closingPairIndex].i + 2
+                            lastUsed = controller.indexes[closingPairIndex].i + 2;
                         } else {
                             j += 1;
                         }
@@ -456,7 +456,7 @@ const start = function (controller, options = {}) {
                                 closingPairIndex,
                             ), links)}</strong>`;
                             j = closingPairIndex + 1;
-                            lastUsed = controller.indexes[closingPairIndex].i + 2
+                            lastUsed = controller.indexes[closingPairIndex].i + 2;
                         } else {
                             j += 1;
                         }
@@ -576,7 +576,7 @@ const start = function (controller, options = {}) {
                         classText = ` class="${controller.languagePrefix}${escapeHtml(controller.rawDescription)}"`;
                     }
 
-                    let rawString = controller.currentString.substring(controller.rawDescriptionEnd, i - 3).trim();
+                    const rawString = controller.currentString.substring(controller.rawDescriptionEnd, i - 3).trim();
                     let currentInlineString;
 
                     let highlighted;
@@ -608,15 +608,15 @@ const start = function (controller, options = {}) {
                 return true;
             }
             return false;
-        }
-    })
+        },
+    });
     controller._refresh();
     Object.assign(controller, DEFAULT_OPTIONS, options);
     controller.inside = [];
     controller.items = [];
     controller.listTypeOrdered = [];
     controller.currentString = ``;
-}
+};
 
 const transform = function (bufferAsString, controller) {
     controller._selfBuffer(bufferAsString);
@@ -628,7 +628,7 @@ const transform = function (bufferAsString, controller) {
     let rawDescriptionStart = 0;
 
     for (let i = 0; i < length; i += 1) {
-        let c = asString[i];
+        const c = asString[i];
         if (controller.state === STATE.CLOSING_RAW) {
             if (c === `\``) {
                 controller.closingBackTicks += 1;
@@ -693,7 +693,7 @@ const transform = function (bufferAsString, controller) {
                 break;
             case STATE.INISIDE_HTML:
                 if (c === `>`) {
-                    const closingTagName = asString.slice(i - controller._currentTagName.length, i)
+                    const closingTagName = asString.slice(i - controller._currentTagName.length, i);
                     if (controller._currentTagName === closingTagName) {
 
 
@@ -786,7 +786,7 @@ const transform = function (bufferAsString, controller) {
                 }
                 break;
             case STATE.QUOTE:
-                if (controller._noteWorthyCharacters(c, i - iAdjust+1)) {
+                if (controller._noteWorthyCharacters(c, i - iAdjust + 1)) {
                     continue;
                 }
                 if (c === `\n`) {
@@ -858,7 +858,7 @@ const transform = function (bufferAsString, controller) {
                 if (c === `\n`) {
                     // do not controller._closeCurrent(toPush, i);
                     // since it will also close the list (to handle lists at the end of markdown without line break
-                    const skipStart = controller.skipStart;
+                    const {skipStart} = controller;
                     const inlineOutput = controller._closeInlineStuff(0, i - iAdjust + 1).trim();
                     controller.items.push(inlineOutput);
                     controller.currentString = asString.substr(i + 1);
@@ -962,5 +962,5 @@ const flush = function (controller) {
         controller.push(string);
     });
     controller._refresh();
-}
+};
 

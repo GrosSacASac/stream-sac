@@ -39,8 +39,7 @@
     "env": {
       "es2021": true,
       "browser": true,
-      "node": true,
-      "deno": true
+      "node": true
     }
   },
   "ava": {

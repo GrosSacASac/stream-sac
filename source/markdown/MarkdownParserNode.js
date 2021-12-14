@@ -22,7 +22,7 @@ class MarkdownParser extends Transform {
     }
 
     _flush(done) {
-        flush(this)
+        flush(this);
         done();
     }
 

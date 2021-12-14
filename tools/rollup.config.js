@@ -28,7 +28,7 @@ const commonOutputOptions = {
     // indent,
     strict: true,
     // freeze,
-    namespaceToStringTag: false
+    namespaceToStringTag: false,
 
     // experimental
     // entryFileNames,
@@ -80,6 +80,6 @@ export default { // can be an array (for multiple inputs)
         // chokidar,
         // include,
         // exclude,
-        clearScreen: true
-    }
+        clearScreen: true,
+    },
 };

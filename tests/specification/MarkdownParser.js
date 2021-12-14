@@ -12,11 +12,11 @@ test(`MarkdownParser is a function`, t => {
 
 test(`paragraph`, async t => {
     const markdownParser = new MarkdownParser();
-    const t1 = `blablabla`
+    const t1 = `blablabla`;
     concatAsStream([`${t1}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -25,32 +25,32 @@ test(`paragraph`, async t => {
 
 test(`paragraphs`, async t => {
     const markdownParser = new MarkdownParser();
-    const t1 = `blablabla`
-    const t2 = `zzzzzzzzzzz`
+    const t1 = `blablabla`;
+    const t2 = `zzzzzzzzzzz`;
     concatAsStream([`${t1}
 
 ${t2}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
     t.is(forceBuffer, (`<p>${t1}</p><p>${t2}</p>`));
 });
 
-['', ' '].forEach(potentialSpaceBefore => {
-    ['', ' '].forEach(potentialSpaceAfter => {
+[``, ` `].forEach(potentialSpaceBefore => {
+    [``, ` `].forEach(potentialSpaceAfter => {
         test(`quote with Space Before ${potentialSpaceBefore === ` `} and space after ${potentialSpaceAfter === ` `}`, async t => {
             const markdownParser = new MarkdownParser();
-            const quote = `An eye for an eye leaves the whole world blind`
-            const author = `Gandhi`
+            const quote = `An eye for an eye leaves the whole world blind`;
+            const author = `Gandhi`;
             concatAsStream([`${potentialSpaceBefore}>${potentialSpaceAfter}${quote}
 
 ${author}`]).pipe(markdownParser);
         
-            let forceBuffer = ``
-            markdownParser.on('data', (x) => {
+            let forceBuffer = ``;
+            markdownParser.on(`data`, (x) => {
                 forceBuffer = `${forceBuffer}${x}`;
             });
             await finished(markdownParser);
@@ -66,14 +66,14 @@ ${author}`]).pipe(markdownParser);
 
 test(`streaming cut in half`, async t => {
     const markdownParser = new MarkdownParser();
-    const t1 = `blablabla`
-    const t2 = `zzzzzzzzzzz`
+    const t1 = `blablabla`;
+    const t2 = `zzzzzzzzzzz`;
     concatAsStream([`${t1.substr(0, 4)}`, `${t1.substr(4)}
 
 ${t2}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -82,11 +82,11 @@ ${t2}`]).pipe(markdownParser);
 
 test(`title`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
+    const titleText = `title`;
     concatAsStream([`# ${titleText}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -95,12 +95,12 @@ test(`title`, async t => {
 
 test(`title alternative`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
+    const titleText = `title`;
     concatAsStream([`${titleText}
 ========`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -109,13 +109,13 @@ test(`title alternative`, async t => {
 
 test(`title alternative with linefeed`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
+    const titleText = `title`;
     concatAsStream([`${titleText}
 ========
 `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -124,11 +124,11 @@ test(`title alternative with linefeed`, async t => {
 
 test(`title 2`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
+    const titleText = `title`;
     concatAsStream([`## ${titleText}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -137,12 +137,12 @@ test(`title 2`, async t => {
 
 test(`title 2 alternative`, async t => {
     const markdownParser = new MarkdownParser();
-    const titleText = `title`
+    const titleText = `title`;
     concatAsStream([`${titleText}
 -----`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -157,8 +157,8 @@ test(`separator`, async t => {
 
 b`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -167,12 +167,12 @@ b`]).pipe(markdownParser);
 
 test(`link`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://example.com/`
-    const linkText = `example`
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`;
     concatAsStream([`[${linkText}](${linkTarget})`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -182,16 +182,16 @@ test(`link`, async t => {
 
 test(`reference link`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://example.com/`
-    const linkText = `example` 
-    const linkRef = `example and you` 
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`; 
+    const linkRef = `example and you`; 
     const linkRefUppercase = linkRef.toUpperCase();
     concatAsStream([`[${linkText}][${linkRef}]
 
 [${linkRefUppercase}]: ${linkTarget}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -201,14 +201,14 @@ test(`reference link`, async t => {
 
 test(`reference link with only text`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://example.com/`
-    const linkText = `example` 
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`; 
     concatAsStream([`[${linkText}]
 
 [${linkText}]: ${linkTarget}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -222,8 +222,8 @@ test(`auto detect link`, async t => {
     const linkTarget = `https://gitlab.com/GrosSacASac/blog-engine-z/`;
     concatAsStream([`${linkTarget}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -236,8 +236,8 @@ test(`auto detect link that could be falsely handled as md`, async t => {
     const linkTarget = `https://gitlab.com/_notmd_`;
     concatAsStream([`${linkTarget}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -247,14 +247,14 @@ test(`auto detect link that could be falsely handled as md`, async t => {
 
 test(`link in the middle of text`, async t => {
     const markdownParser = new MarkdownParser();
-    let textbefore = `aaa`;
-    let textafter = `bbb`;
-    const linkTarget = `example.com`
-    const linkText = `example`
+    const textbefore = `aaa`;
+    const textafter = `bbb`;
+    const linkTarget = `example.com`;
+    const linkText = `example`;
     concatAsStream([`${textbefore}[${linkText}](${linkTarget})${textafter}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -264,15 +264,15 @@ test(`link in the middle of text`, async t => {
 
 test(`em in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
-    const a = `aaa`
-    const outside = `outside`
-    const b = `bbb`
+    const a = `aaa`;
+    const outside = `outside`;
+    const b = `bbb`;
     concatAsStream([` - *${a}*
 - ${outside}*${b}*${outside}`]).pipe(markdownParser);
 // todo alsow with 1 space before
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -285,17 +285,17 @@ test(`em in the middle of list items`, async t => {
 
 test(`em in the middle of list items 2`, async t => {
     const markdownParser = new MarkdownParser();
-    const a = `aaa`
-    const outside = `outside`
-    const b = `bbb`
+    const a = `aaa`;
+    const outside = `outside`;
+    const b = `bbb`;
     concatAsStream([` - *${a}*
 - ${outside}*${b}*${outside}
 - ${outside}*${b}*${outside}
 - ${outside}*${b}*${outside}
 - ${outside}*${b}*${outside}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -308,15 +308,15 @@ test(`em in the middle of list items 2`, async t => {
 
 test(`link in the middle of list items`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://surge.sh/`
-    const linkText = `surge`
-    const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`
-    const linkText2 = `blog-engine-sac`
+    const linkTarget = `https://surge.sh/`;
+    const linkText = `surge`;
+    const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`;
+    const linkText2 = `blog-engine-sac`;
     concatAsStream([` - [${linkText}](${linkTarget}) to deploy any local HTML, CSS, JS file to a website
  - [${linkText2}](${linkTarget2}) to create a website from markdown files`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -328,15 +328,15 @@ test(`link in the middle of list items`, async t => {
 
 test(`link in the middle of ordered list items`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://surge.sh/`
-    const linkText = `surge`
-    const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`
-    const linkText2 = `blog-engine-sac`
+    const linkTarget = `https://surge.sh/`;
+    const linkText = `surge`;
+    const linkTarget2 = `https://letz.social/blog/b/blog-engine-sac`;
+    const linkText2 = `blog-engine-sac`;
     concatAsStream([` 1. [${linkText}](${linkTarget}) to deploy any local HTML, CSS, JS file to a website
  2. [${linkText2}](${linkTarget2}) to create a website from markdown files`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -348,13 +348,13 @@ test(`link in the middle of ordered list items`, async t => {
 
 test(`raw inline`, async t => {
     const markdownParser = new MarkdownParser();
-    const text = `*special text*`
+    const text = `*special text*`;
     concatAsStream([`
     \`${text}\`
     `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -365,8 +365,8 @@ test(`raw in the middle of a paragraph`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`Want to make text look big ? Think about the reason first, maybe it is a title and \`<h1-6>\` should be used.`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -377,8 +377,8 @@ test(`raw with backticks inside`, async t => {
     const markdownParser = new MarkdownParser();
     concatAsStream([`\`\`\`typeof x === \`string\`\`\`\` for type checking .`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -387,11 +387,11 @@ test(`raw with backticks inside`, async t => {
 
 test(`raw in the middle of a paragraph with triple backticks`, async t => {
     const markdownParser = new MarkdownParser();
-    const text = `*special text*`
+    const text = `*special text*`;
     concatAsStream([`a \`\`\`<h1-6>\`\`\` c`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -411,8 +411,8 @@ test(`raw html code is displayed properly`, async t => {
 \`\`\`
     `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -440,8 +440,8 @@ f
 \`\`\`
 `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);  
@@ -460,8 +460,8 @@ c
 
 e`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);  
@@ -472,12 +472,12 @@ e`]).pipe(markdownParser);
 
 test(`image`, async t => {
     const markdownParser = new MarkdownParser();
-    const altText = `drinking face`
-    const source = `../images/about.jpg`
+    const altText = `drinking face`;
+    const source = `../images/about.jpg`;
     concatAsStream([`![${altText}](${source})`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -486,11 +486,11 @@ test(`image`, async t => {
 
 test(`strong`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `important !`
+    const x = `important !`;
     concatAsStream([`**${x}**`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -500,11 +500,11 @@ test(`strong`, async t => {
 
 test(`strong alternative syntax`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `important !`
+    const x = `important !`;
     concatAsStream([`__${x}__`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -514,11 +514,11 @@ test(`strong alternative syntax`, async t => {
 
 test(`deleted`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `removed !`
+    const x = `removed !`;
     concatAsStream([`~~${x}~~`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -528,11 +528,11 @@ test(`deleted`, async t => {
 
 test(`2 deleted`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `removed !`
+    const x = `removed !`;
     concatAsStream([`~~${x}~~~~${x}~~`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -541,11 +541,11 @@ test(`2 deleted`, async t => {
 
 test(`deleted without closing`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `removed !`
+    const x = `removed !`;
     concatAsStream([`~~${x}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -554,11 +554,11 @@ test(`deleted without closing`, async t => {
 
 test(`closing deleted without start`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `removed !`
+    const x = `removed !`;
     concatAsStream([`${x}~~`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -568,11 +568,11 @@ test(`closing deleted without start`, async t => {
 
 test(`emphasis`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `notice me`
+    const x = `notice me`;
     concatAsStream([`*${x}*`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -581,11 +581,11 @@ test(`emphasis`, async t => {
 
 test(`multiple emphasis`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `notice me`
+    const x = `notice me`;
     concatAsStream([`*${x}**${x}*`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -594,11 +594,11 @@ test(`multiple emphasis`, async t => {
 
 test(`emphasis alternative syntax`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `notice me`
+    const x = `notice me`;
     concatAsStream([`_${x}_`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -608,13 +608,13 @@ test(`emphasis alternative syntax`, async t => {
 
 test(`unordered list`, async t => {
     const markdownParser = new MarkdownParser();
-    const listItem = `xxx yyy`
-    const otherListItem = `eee uuu`
+    const listItem = `xxx yyy`;
+    const otherListItem = `eee uuu`;
     concatAsStream([` * ${listItem}
  * ${otherListItem}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -623,14 +623,14 @@ test(`unordered list`, async t => {
 
 test(`unordered list with end of line`, async t => {
     const markdownParser = new MarkdownParser();
-    const listItem = `xxx yyy`
-    const otherListItem = `eee uuu`
+    const listItem = `xxx yyy`;
+    const otherListItem = `eee uuu`;
     concatAsStream([` * ${listItem}
  * ${otherListItem}
 `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -640,13 +640,13 @@ test(`unordered list with end of line`, async t => {
 
 test(`ordered list`, async t => {
     const markdownParser = new MarkdownParser();
-    const listItem = `aaa bbb`
-    const otherListItem = `ccc ddd`
+    const listItem = `aaa bbb`;
+    const otherListItem = `ccc ddd`;
     concatAsStream([` 1. ${listItem}
  2. ${otherListItem}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -655,11 +655,11 @@ test(`ordered list`, async t => {
 
 test(`not ordered list`, async t => {
     const markdownParser = new MarkdownParser();
-    const text = `aaa bbb`
+    const text = `aaa bbb`;
     concatAsStream([` 1 ${text}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -701,13 +701,13 @@ test(`not ordered list`, async t => {
 
 test(`code block`, async t => {
     const markdownParser = new MarkdownParser();
-    const code = `x = 2`
-    const lang = `js`
+    const code = `x = 2`;
+    const lang = `js`;
     concatAsStream([`\`\`\`${lang}
 ${code}\`\`\``]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -724,8 +724,8 @@ test(`inline html symbols are escaped`, async t => {
     1 & 1 = 2
 `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -737,8 +737,8 @@ test(`inline html stays as is `, async t => {
     concatAsStream([`
     <p>8 &gt; 7</p>`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -763,8 +763,8 @@ test(`it is not inline html if invalid html`, async t => {
     concatAsStream([`
     <1>*8 > 7*</1>`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -777,8 +777,8 @@ test(`it should handle empty html elements`, async t => {
 
     _c_`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -798,8 +798,8 @@ test(`it should not mix elements`, async t => {
     ## e
     `]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -808,13 +808,13 @@ test(`it should not mix elements`, async t => {
 
 test(`link inside emphasis alternative syntax`, async t => {
     const markdownParser = new MarkdownParser();
-    const x = `notice me`
-    const linkTarget = `https://example.com/`
-    const linkText = `example`
+    const x = `notice me`;
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`;
     concatAsStream([`_${x}[${linkText}](${linkTarget})_`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -824,14 +824,14 @@ test(`link inside emphasis alternative syntax`, async t => {
 
 test(`link inside ordered list`, async t => {
     const markdownParser = new MarkdownParser();
-    const linkTarget = `https://example.com/`
-    const linkText = `example`
-    const otherListItem = `ccc ddd`
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`;
+    const otherListItem = `ccc ddd`;
     concatAsStream([` 1. [${linkText}](${linkTarget})
  2. ${otherListItem}`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -845,11 +845,11 @@ test(`h3 then link inside li`, async t => {
 ### Related
 
  - [from2](https://www.npmjs.com/package/from2)
-`
+`,
     ]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -860,11 +860,11 @@ test(`h3 then link inside li`, async t => {
 
 test(`em inside quote`, async t => {
     const markdownParser = new MarkdownParser();
-    const quote = `An eye for an eye leaves the whole world blind`
+    const quote = `An eye for an eye leaves the whole world blind`;
     concatAsStream([`> *${quote}*`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -874,12 +874,12 @@ test(`em inside quote`, async t => {
 
 test(`ems inside quote`, async t => {
     const markdownParser = new MarkdownParser();
-    const parts = [`a`, `b`, `c`,];
+    const parts = [`a`, `b`, `c`];
     
     concatAsStream([`> *${parts[0]}*${parts[1]}*${parts[2]}*`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
@@ -888,12 +888,12 @@ test(`ems inside quote`, async t => {
 
 test(`strongs inside quote`, async t => {
     const markdownParser = new MarkdownParser();
-    const parts = [`a`, `b`, `c`,];
+    const parts = [`a`, `b`, `c`];
     
     concatAsStream([`**${parts[0]}**${parts[1]}**${parts[2]}**`]).pipe(markdownParser);
 
-    let forceBuffer = ``
-    markdownParser.on('data', (x) => {
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);

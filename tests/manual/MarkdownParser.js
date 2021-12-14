@@ -13,12 +13,12 @@ const markdownParser = new MarkdownParser({
         return originalHref;
     },
     mediaHook: function (source, altText) {
-        medias.push(source)
+        medias.push(source);
         return `<picture>
         <source src="${source}-big" media="big">
         <img alt="${altText}" src="${source}">
-        </picture>`
-    }
+        </picture>`;
+    },
 });
 markdownParser.setEncoding(`utf8`);
 
@@ -30,10 +30,10 @@ pipeline(readStream, markdownParser, fs.createWriteStream(destination), (error) 
         console.error(error);
         return;
     }
-    console.log(`links used:`)
-    console.log(links)
-    console.log(`medias used:`)
-    console.log(medias)
+    console.log(`links used:`);
+    console.log(links);
+    console.log(`medias used:`);
+    console.log(medias);
 });
 
 

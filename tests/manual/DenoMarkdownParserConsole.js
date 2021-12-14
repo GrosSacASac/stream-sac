@@ -1,5 +1,5 @@
 //deno run ./tests/manual/DenoMarkdownParserConsole.js
-import { createMarkdownParserStream } from "../../built/MarkdownParserWeb.es.js"
+import { createMarkdownParserStream } from "../../built/MarkdownParserWeb.es.js";
 
 
 const options = {};
@@ -20,11 +20,11 @@ No way !
 
 function readStream() {
     const reader = stream.pipeThrough(createMarkdownParserStream(options)).getReader();
-    let result = '';
+    let result = ``;
 
     return reader.read().then(function processText({ done, value }) {
         if (done) {
-            console.log("Stream complete");
+            console.log(`Stream complete`);
             console.log(result);
             return;
         }

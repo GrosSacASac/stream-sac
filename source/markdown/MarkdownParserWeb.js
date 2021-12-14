@@ -10,7 +10,7 @@ const createMarkdownParserStream = (options = {}) => {
         },
 
         transform,
-        flush
+        flush,
     });
 };
 

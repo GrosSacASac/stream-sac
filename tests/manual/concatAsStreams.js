@@ -15,7 +15,7 @@ const concatedStream = concatAsStream([
     readStream, // readme
     aString, // zzzz and linebreak
     promise, // changelog
-    `999`, `888`
+    `999`, `888`,
 ]);
 concatedStream.setEncoding(`utf8`);
 
