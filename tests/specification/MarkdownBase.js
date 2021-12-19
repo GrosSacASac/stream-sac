@@ -492,3 +492,22 @@ test(`it should handle empty html elements`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
 });
+
+test(`it should handle table`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+| A         | B     | C |
+|--------------|-----------|------------|
+| D | E      | F        |
+| G      | H  | I       |
+`]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<table><tbody><tr><td>A</td><td>B</td><td>C</td></tr><tr><td>D</td><td>E</td><td><em>F</em></td></tr><tr><td>G</td><td><strong>H</strong></td><td>I</td></tr></tbody></table>`));
+});
+
+
