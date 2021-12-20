@@ -3,6 +3,7 @@ import test from "ava";
 import slugify from "@sindresorhus/slugify";
 import { MarkdownParser } from "../../source/markdown/MarkdownParserNode.js";
 import { concatAsStream } from "../../source/concatAsStream.js";
+import {isWhitespaceCharacter} from "is-whitespace-character";
 //todo change order (block then inline)
 
 
@@ -507,7 +508,30 @@ test(`it should handle table`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<table><tbody><tr><td>A</td><td>B</td><td>C</td></tr><tr><td>D</td><td>E</td><td><em>F</em></td></tr><tr><td>G</td><td><strong>H</strong></td><td>I</td></tr></tbody></table>`));
+    t.is(forceBuffer, Array.from(
+`<table>
+    <thead>
+        <tr>
+            <th>A</th>
+            <th>B</th>
+            <th>C</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>D</td>
+            <td>E</td>
+            <td>F</td>
+        </tr>
+        <tr>
+            <td>G</td>
+            <td>H</td>
+            <td>I</td>
+        </tr>
+    </tbody>
+</table>`).filter(c => {
+    return !isWhitespaceCharacter(c)
+}).join(``));
 });
 
 
