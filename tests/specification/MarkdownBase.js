@@ -494,13 +494,53 @@ test(`it should handle empty html elements`, async t => {
     t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
 });
 
-test(`it should handle table`, async t => {
-    const markdownParser = new MarkdownParser();
-    concatAsStream([`
-| A         | B     | C |
+const tableInput = `| A         | B     | C |
 |--------------|-----------|------------|
 | D | E      | F        |
-| G      | H  | I       |
+| G      | H  | I       |`;
+
+const tableOutput = Array.from(
+`<table>
+<thead>
+    <tr>
+        <th>A</th>
+        <th>B</th>
+        <th>C</th>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+        <td>D</td>
+        <td>E</td>
+        <td>F</td>
+    </tr>
+    <tr>
+        <td>G</td>
+        <td>H</td>
+        <td>I</td>
+    </tr>
+</tbody>
+</table>`).filter(c => {
+    return !isWhitespaceCharacter(c)
+}).join(``);
+
+test(`it should handle table`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([tableInput]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, tableOutput);
+});
+
+
+test(`it should handle table with linebreaks`, async t => {
+    const markdownParser = new MarkdownParser();
+    concatAsStream([`
+${tableInput}
 `]).pipe(markdownParser);
 
     let forceBuffer = ``;
@@ -508,30 +548,6 @@ test(`it should handle table`, async t => {
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, Array.from(
-`<table>
-    <thead>
-        <tr>
-            <th>A</th>
-            <th>B</th>
-            <th>C</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>D</td>
-            <td>E</td>
-            <td>F</td>
-        </tr>
-        <tr>
-            <td>G</td>
-            <td>H</td>
-            <td>I</td>
-        </tr>
-    </tbody>
-</table>`).filter(c => {
-    return !isWhitespaceCharacter(c)
-}).join(``));
+    t.is(forceBuffer, tableOutput);
 });
-
 

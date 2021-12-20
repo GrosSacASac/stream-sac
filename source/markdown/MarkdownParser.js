@@ -73,6 +73,8 @@ const STATE = {
     POTENTIAL_HTML: i++,
     AFTER_EMPTY_HTML: i++,
     INISIDE_HTML: i++,
+    TABLE: i++,
+    TABLE_MAYBE_END: i++,
 };
 
 
@@ -518,7 +520,12 @@ const start = function (controller, options = {}) {
             if (controller.state === STATE.TEXT) {
                 controller.skipStart -= 1;
             }
-            if (controller.state !== STATE.HORIZONTAL_RULE && controller.state !== STATE.CLOSING_RAW && controller.state !== STATE.AFTER_EMPTY_HTML) {
+            if (controller.state !== STATE.HORIZONTAL_RULE &&
+                controller.state !== STATE.CLOSING_RAW &&
+                controller.state !== STATE.AFTER_EMPTY_HTML &&
+                controller.state !== STATE.TABLE &&
+                controller.state !== STATE.TABLE_MAYBE_END
+            ) {
                 inlineOutput = controller._closeInlineStuff(0, i).trim();
             }
             switch (controller.state) {
@@ -595,7 +602,35 @@ const start = function (controller, options = {}) {
                     controller.rawDescription = ``;
                     controller.closingBackTicks = 0;
                     break;
+                case STATE.TABLE:
+                    controller.items.push([controller.tableLineStart, i]);
+                case STATE.TABLE_MAYBE_END:
+                    // const s = controller.currentString.substring(0, i).trim();
+                    // console.log(s);
+                    toPush.push("<table><thead>")
 
+                    let header = true;
+                    let cellTag = `th`
+                    controller.items.forEach(([start, end]) => {
+                        const line = controller.currentString.substring(start, end);
+                        if (header && line.includes("---")) {
+                            header = false;
+                            cellTag = `td`
+                            toPush.push("</thead><tbody>")
+                            return;
+                        }
+                        toPush.push("<tr>")
+                        const split = line.split("|").map(tabledata => {
+                            return tabledata.trim();
+                        }).filter(Boolean);
+                        split.forEach(tabledata => {
+                            toPush.push(`<${cellTag}>${escapeHtml(tabledata)}</${cellTag}>`);
+                        })
+                        
+                        toPush.push("</tr>")
+                    })
+                    toPush.push("</tbody></table>")
+                    break;
                 default:
                     return;
 
@@ -708,7 +743,6 @@ const transform = function (bufferAsString, controller) {
 
                 }
                 break;
-
             case STATE.TEXT:
                 if (c === `\n`) {
                     if (controller.newLined) {
@@ -759,7 +793,11 @@ const transform = function (bufferAsString, controller) {
                             controller.firstCharcater = false;
                         } else if (isWhitespace(c)) {
                             controller.skipStart += 1;
-                        } else if (c === `<`) {
+                        } else if (c === `|`) {
+                            controller.state = STATE.TABLE;
+                            controller.items = [];
+                            controller.tableLineStart = i - iAdjust;
+                        }  else if (c === `<`) {
                             controller.state = STATE.POTENTIAL_HTML;
                             controller.lastCharacter = c;
                             controller.tagNameStart = i + 1;
@@ -877,6 +915,7 @@ const transform = function (bufferAsString, controller) {
                     iAdjust = i + 1;
                 }
                 break;
+
             case STATE.LIST_ITEM_END:
                 if (c === `\n`) {
                     controller._closeCurrent(toPush, i - iAdjust);
@@ -902,7 +941,6 @@ const transform = function (bufferAsString, controller) {
                     controller.state = STATE.TEXT;
                 }
                 break;
-
             case STATE.START_RAW:
                 if (c === `\``) {
                     controller.backTicks += 1;
@@ -943,6 +981,24 @@ const transform = function (bufferAsString, controller) {
                         controller.closingBackTicks = 0;
                     }
                 }
+                break;
+            case STATE.TABLE:
+            
+                if (c === `\n`) {
+                    controller.state = STATE.TABLE_MAYBE_END;
+                    
+                    controller.items.push([controller.tableLineStart, i - iAdjust]);
+                }
+                break;
+
+            case STATE.TABLE_MAYBE_END:
+        
+                if (c === `|`) {
+                    controller.state = STATE.TABLE;
+                    controller.tableLineStart = i - iAdjust;
+                    break;
+                }
+                controller._closeCurrent(toPush, i - iAdjust);
                 break;
             default:
                 throw (`Invalid state ${controller.state}`);
