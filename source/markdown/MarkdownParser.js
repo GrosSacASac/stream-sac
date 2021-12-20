@@ -607,29 +607,29 @@ const start = function (controller, options = {}) {
                 case STATE.TABLE_MAYBE_END:
                     // const s = controller.currentString.substring(0, i).trim();
                     // console.log(s);
-                    toPush.push("<table><thead>")
+                    toPush.push(`<table><thead>`);
 
                     let header = true;
-                    let cellTag = `th`
+                    let cellTag = `th`;
                     controller.items.forEach(([start, end]) => {
                         const line = controller.currentString.substring(start, end);
-                        if (header && line.includes("---")) {
+                        if (header && line.includes(`---`)) {
                             header = false;
-                            cellTag = `td`
-                            toPush.push("</thead><tbody>")
+                            cellTag = `td`;
+                            toPush.push(`</thead><tbody>`);
                             return;
                         }
-                        toPush.push("<tr>")
-                        const split = line.split("|").map(tabledata => {
+                        toPush.push(`<tr>`);
+                        const split = line.split(`|`).map(tabledata => {
                             return tabledata.trim();
                         }).filter(Boolean);
                         split.forEach(tabledata => {
                             toPush.push(`<${cellTag}>${escapeHtml(tabledata)}</${cellTag}>`);
-                        })
+                        });
                         
-                        toPush.push("</tr>")
-                    })
-                    toPush.push("</tbody></table>")
+                        toPush.push(`</tr>`);
+                    });
+                    toPush.push(`</tbody></table>`);
                     break;
                 default:
                     return;

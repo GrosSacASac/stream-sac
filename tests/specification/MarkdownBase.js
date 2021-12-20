@@ -521,7 +521,7 @@ const tableOutput = Array.from(
     </tr>
 </tbody>
 </table>`).filter(c => {
-    return !isWhitespaceCharacter(c)
+    return !isWhitespaceCharacter(c);
 }).join(``);
 
 test(`it should handle table`, async t => {
