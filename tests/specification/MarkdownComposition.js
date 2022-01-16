@@ -288,6 +288,23 @@ test(`link inside emphasis alternative syntax`, async t => {
     t.is(forceBuffer, (`<p><em>${x}<a href="${linkTarget}">${linkText}</a></em></p>`));
 });
 
+test(`image instead of the link text`, async t => {
+    // [![npm bundle size minified + gzip](https://img.shields.io/bundlephobia/minzip/dom99.svg)](https://bundlephobia.com/result?p=dom99)
+    const markdownParser = new MarkdownParser();
+    const imageAlt = `npm bundle size minified + gzip`;
+    const imageSrc = `https://img.shields.io/bundlephobia/minzip/dom99.svg`;
+    const linkSrc = `https://bundlephobia.com/result?p=dom99`;
+    
+    concatAsStream([`[![${imageAlt}](${imageSrc})](${linkSrc})`]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><a href="${linkSrc}"><img alt="${imageAlt}" src="${imageSrc}"></a></p>`));
+});
+
 
 test(`link inside ordered list`, async t => {
     const markdownParser = new MarkdownParser();
