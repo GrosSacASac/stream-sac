@@ -383,3 +383,21 @@ test(`strongs inside quote`, async t => {
     await finished(markdownParser);
     t.is(forceBuffer, (`<p><strong>${parts[0]}</strong>${parts[1]}<strong>${parts[2]}</strong></p>`));
 });
+
+
+test(`title and html`, async t => {
+    const markdownParser = new MarkdownParser();
+    const title = `hello world`;
+    const htmlPart = `<meter value="0.6"></meter>`;
+    
+    concatAsStream([`# ${title}
+
+${htmlPart}`]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<h1>title</h1>${htmlPart}`));
+});
