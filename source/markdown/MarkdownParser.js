@@ -257,11 +257,29 @@ const start = function (controller, options = {}) {
                 }
                 return confirmedResult;
             };
+
             const findClosingSimple = (after, targetC) => {
                 for (let k = after; k < end; k += 1) {
                     const { i, c } = controller.indexes[k];
                     if (c === targetC) {
                         return k;
+                    }
+                }
+            };
+            
+            // finds closing but takes into account if inside there are opening and closing pairs
+        
+            const findClosing = (after, opening, closing) => {
+                let opens = 1;
+                for (let k = after; k < end; k += 1) {
+                    const { i, c } = controller.indexes[k];
+                    if (c === closing) {
+                        opens -= 1;
+                        if (opens === 0) {
+                            return k;
+                        }
+                    } else if (c === opening) {
+                        opens += 1;
                     }
                 }
             };
@@ -307,7 +325,7 @@ const start = function (controller, options = {}) {
                     }
                 } else if (c === `[`) {
                     // link
-                    const closingIndex = findClosingSimple(j + 1, `]`);
+                    const closingIndex = findClosing(j + 1, `[`, `]`);
                     if (closingIndex !== undefined) {
                         const closingPosition = controller.indexes[closingIndex].i;
                         const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
