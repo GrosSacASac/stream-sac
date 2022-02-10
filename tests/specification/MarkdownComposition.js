@@ -399,5 +399,5 @@ ${htmlPart}`]).pipe(markdownParser);
         forceBuffer = `${forceBuffer}${x}`;
     });
     await finished(markdownParser);
-    t.is(forceBuffer, (`<h1>title</h1>${htmlPart}`));
+    t.is(forceBuffer, (`<h1>${title}</h1>${htmlPart}`));
 });
