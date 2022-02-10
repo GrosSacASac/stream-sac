@@ -7,6 +7,7 @@
   "main": "source/html/escapeHtmlStream.js",
   "scripts": {
     "test": "ava",
+    "test-one": "ava tests/specification/one.js",
     "test-verbose": "ava --verbose",
     "lint-fix": "eslint --ignore-path .gitignore --fix .",
     "lint": "eslint --ignore-path .gitignore .",
