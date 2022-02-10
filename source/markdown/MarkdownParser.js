@@ -734,7 +734,7 @@ const transform = function (bufferAsString, controller) {
 
                         controller.state = STATE.AFTER_EMPTY_HTML;
                         controller.currentString = asString.substr(controller.tagNameStart - 1);
-                        controller._closeCurrent(toPush, i + 1 - iAdjust - (controller.tagNameStart - 1));
+                        controller._closeCurrent(toPush, i + 1 - iAdjust);
                         controller.currentString = asString.substr(i + 1);
                         iAdjust = i + 1;
                     } else {
