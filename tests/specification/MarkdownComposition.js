@@ -263,7 +263,7 @@ test(`it should not mix elements`, async t => {
     _d_
     
     ## e
-    `]).pipe(markdownParser);
+`]).pipe(markdownParser);
 
     let forceBuffer = ``;
     markdownParser.on(`data`, (x) => {
