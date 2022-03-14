@@ -637,3 +637,46 @@ test(`it should handle table with escaped horizontal bar`, async t => {
 });
 
 
+test(`it should handle table with empty cells`, async t => {
+
+    const tableInput = `| \|A         | B     | C |
+    |--------------|-----------|------------|
+    | D |
+    | G      | H  | I       |`;
+    
+    const tableOutput = Array.from(
+    `<table>
+    <thead>
+        <tr>
+            <th>|A</th>
+            <th>B</th>
+            <th>C</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>D</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>G</td>
+            <td>H</td>
+            <td>I</td>
+        </tr>
+    </tbody>
+    </table>`).filter(c => {
+        return !isWhitespaceCharacter(c);
+    }).join(``);
+    const markdownParser = new MarkdownParser();
+    concatAsStream([tableInput]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, tableOutput);
+});
+
+
