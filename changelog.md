@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0
+
+Table support
+
 ## 2.0.0
 
 MarkdownParser split into
