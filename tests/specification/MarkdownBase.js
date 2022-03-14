@@ -494,6 +494,7 @@ test(`it should handle empty html elements`, async t => {
     t.is(forceBuffer, (`<img src="a" alt="b"><p><em>c</em></p>`));
 });
 
+
 const tableInput = `| A         | B     | C |
 |--------------|-----------|------------|
 | D | E      | F        |
@@ -525,6 +526,7 @@ const tableOutput = Array.from(
 }).join(``);
 
 test(`it should handle table`, async t => {
+    
     const markdownParser = new MarkdownParser();
     concatAsStream([tableInput]).pipe(markdownParser);
 
@@ -550,4 +552,45 @@ ${tableInput}
     await finished(markdownParser);
     t.is(forceBuffer, tableOutput);
 });
+
+test(`it should handle table with alignments`, async t => {
+    const tableInput = `| A         | B     | C |
+| :--------------| :------: | --------:|
+| D | E      | F        |
+| G      | H  | I       |
+`;
+
+    const tableOutput = Array.from([
+    `<table>`,
+    `<thead>`,
+        `<tr>`,
+            `<th style="text-align: left">A</th>`,
+            `<th style="text-align: center">B</th>`,
+            `<th style="text-align: right">C</th>`,
+        `</tr>`,
+    `</thead>`,
+    `<tbody>`,
+        `<tr>`,
+            `<td style="text-align: left">D</td>`,
+            `<td style="text-align: center">E</td>`,
+            `<td style="text-align: right">F</td>`,
+        `</tr>`,
+        `<tr>`,
+            `<td style="text-align: left">G</td>`,
+            `<td style="text-align: center">H</td>`,
+`<td style="text-align: right">I</td>`,
+        `</tr>`,
+    `</tbody>`,
+    `</table>`]).join(``);
+    const markdownParser = new MarkdownParser();
+    concatAsStream([tableInput]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, tableOutput);
+});
+
 
