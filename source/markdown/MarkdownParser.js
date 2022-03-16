@@ -666,6 +666,10 @@ const start = function (controller, options = {}) {
                         split.forEach((tabledata, position) => {
                             toPush.push(`<${cellTag}${alignments[position]}>${escapeHtml(tabledata)}</${cellTag}>`);
                         });
+                        // handle remaining (empty cells)
+                        for (let i = split.length; i < alignments.length; i += 1) {
+                            toPush.push(`<${cellTag}${alignments[i]}></${cellTag}>`);
+                        }
                         
                         toPush.push(`</tr>`);
                     });

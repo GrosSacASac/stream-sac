@@ -3,6 +3,7 @@
 ## 2.2.0
 
  * Table alignment
+ * Table empty cells
 
 
 ## 2.1.0
