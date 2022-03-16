@@ -639,7 +639,7 @@ test(`it should handle table with escaped horizontal bar`, async t => {
 
 test(`it should handle table with empty cells`, async t => {
 
-    const tableInput = `| \|A         | B     | C |
+    const tableInput = `| A         | B     | C |
     |--------------|-----------|------------|
     | D |
     | G      | H  | I       |`;
