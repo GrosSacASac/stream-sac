@@ -596,7 +596,7 @@ test(`it should handle table with alignments`, async t => {
 
 test(`it should handle table with escaped horizontal bar`, async t => {
 
-    const tableInput = `| \|A         | B     | C |
+    const tableInput = String.raw`| \|A         | B     | C |
 |--------------|-----------|------------|
 | D | E      | F        |
 | G      | H  | I       |`;
