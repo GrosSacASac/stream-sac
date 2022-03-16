@@ -652,19 +652,20 @@ const start = function (controller, options = {}) {
                         return true;
                     });
                     controller.items.forEach(([start, end]) => {
-                        const line = controller.currentString.substring(start, end);
+                        let line = controller.currentString.substring(start, end);
                         if (header && line.includes(`---`)) {
                             header = false;
                             cellTag = `td`;
                             toPush.push(`</thead><tbody>`);
                             return;
                         }
+                        line = line.replaceAll(`\\|`, `\0`); // escaped |, use Placeholder for the split then replace again below
                         toPush.push(`<tr>`);
                         const split = line.split(`|`).map(tabledata => {
                             return tabledata.trim();
                         }).filter(Boolean);
                         split.forEach((tabledata, position) => {
-                            toPush.push(`<${cellTag}${alignments[position]}>${escapeHtml(tabledata)}</${cellTag}>`);
+                            toPush.push(`<${cellTag}${alignments[position]}>${escapeHtml(tabledata.replaceAll(`\0`, `|`))}</${cellTag}>`);
                         });
                         // handle remaining (empty cells)
                         for (let i = split.length; i < alignments.length; i += 1) {

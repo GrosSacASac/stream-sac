@@ -4,6 +4,7 @@
 
  * Table alignment
  * Table empty cells
+ * Table escaped \|
 
 
 ## 2.1.0
