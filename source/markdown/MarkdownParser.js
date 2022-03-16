@@ -629,6 +629,28 @@ const start = function (controller, options = {}) {
 
                     let header = true;
                     let cellTag = `th`;
+                    const alignments = [];
+                    // first determine the alignments
+                    controller.items.some(([start, end]) => {
+                        const line = controller.currentString.substring(start, end);
+                        if (!line.includes(`---`)) {
+                            return;
+                        }
+                        line.split(`|`).map(tabledata => {
+                            return tabledata.trim();
+                        }).filter(Boolean).forEach(alignpattern => {
+                            if (alignpattern.startsWith(":") && alignpattern.endsWith(":")) {
+                                alignments.push(` style="text-align: center"`);
+                            } else if (alignpattern.startsWith(":")) {
+                                alignments.push(` style="text-align: left"`);
+                            } else if (alignpattern.endsWith(":")) {
+                                alignments.push(` style="text-align: right"`);
+                            } else {
+                                alignments.push(``);
+                            }
+                        });
+                        return true;
+                    });
                     controller.items.forEach(([start, end]) => {
                         const line = controller.currentString.substring(start, end);
                         if (header && line.includes(`---`)) {
@@ -641,8 +663,8 @@ const start = function (controller, options = {}) {
                         const split = line.split(`|`).map(tabledata => {
                             return tabledata.trim();
                         }).filter(Boolean);
-                        split.forEach(tabledata => {
-                            toPush.push(`<${cellTag}>${escapeHtml(tabledata)}</${cellTag}>`);
+                        split.forEach((tabledata, position) => {
+                            toPush.push(`<${cellTag}${alignments[position]}>${escapeHtml(tabledata)}</${cellTag}>`);
                         });
                         
                         toPush.push(`</tr>`);
