@@ -597,9 +597,9 @@ test(`it should handle table with alignments`, async t => {
 test(`it should handle table with escaped horizontal bar`, async t => {
 
     const tableInput = `| \|A         | B     | C |
-    |--------------|-----------|------------|
-    | D | E      | F        |
-    | G      | H  | I       |`;
+|--------------|-----------|------------|
+| D | E      | F        |
+| G      | H  | I       |`;
     
     const tableOutput = Array.from(
     `<table>
@@ -640,15 +640,15 @@ test(`it should handle table with escaped horizontal bar`, async t => {
 test(`it should handle table with empty cells`, async t => {
 
     const tableInput = `| A         | B     | C |
-    |--------------|-----------|------------|
-    | D |
-    | G      | H  | I       |`;
+|--------------|-----------|------------|
+| D |
+| G      | H  | I       |`;
     
     const tableOutput = Array.from(
     `<table>
     <thead>
         <tr>
-            <th>|A</th>
+            <th>A</th>
             <th>B</th>
             <th>C</th>
         </tr>
