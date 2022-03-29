@@ -853,7 +853,7 @@ const transform = function (bufferAsString, controller) {
                             controller.firstCharcater = false;
 
                             if (controller._noteWorthyCharacters(c, i - iAdjust)) {
-                                continue;
+                                break;
                             }
                         }
                     } else {
@@ -861,14 +861,14 @@ const transform = function (bufferAsString, controller) {
                             controller.newLined = false;
                         }
                         if (controller._noteWorthyCharacters(c, i - iAdjust)) {
-                            continue;
+                            break;
                         }
                     }
                 }
                 break;
             case STATE.QUOTE:
                 if (controller._noteWorthyCharacters(c, i - iAdjust + 1)) {
-                    continue;
+                    break;
                 }
                 if (c === `\n`) {
                     if (controller.newLined) {
@@ -934,7 +934,7 @@ const transform = function (bufferAsString, controller) {
                 break;
             case STATE.LIST_ITEM_TEXT:
                 if (controller._noteWorthyCharacters(c, i - iAdjust)) {
-                    continue;
+                    break;
                 }
                 if (c === `\n`) {
                     // do not controller._closeCurrent(toPush, i);
@@ -950,7 +950,7 @@ const transform = function (bufferAsString, controller) {
                 break;
             case STATE.TITLE_TEXT:
                 if (controller._noteWorthyCharacters(c, i - iAdjust)) {
-                    continue;
+                    break;
                 }
                 if (c === `\n`) {
                     controller._closeCurrent(toPush, i - iAdjust);
