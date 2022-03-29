@@ -167,6 +167,11 @@ const start = function (controller, options = {}) {
             controller.closingBackTicks = 0;
             controller.newLined = false;
         },
+        _refreshDeep() {
+            controller._refresh();
+            controller.indexes.length = 0;
+            controller.items.length = 0;
+        },
 
         _selfBuffer(x) {
             controller.currentString = `${controller.currentString}${x}`;
@@ -675,7 +680,7 @@ const start = function (controller, options = {}) {
                         toPush.push(`</tr>`);
                     });
                     toPush.push(`</tbody></table>`);
-                    controller._refresh();
+                    controller._refreshDeep();
                     break;
                 default:
                     return;
@@ -691,12 +696,14 @@ const start = function (controller, options = {}) {
             return false;
         },
     });
-    controller._refresh();
-    Object.assign(controller, DEFAULT_OPTIONS, options);
+    
+    controller.indexes = [];
     controller.inside = [];
     controller.items = [];
     controller.listTypeOrdered = [];
     controller.currentString = ``;
+    controller._refresh();
+    Object.assign(controller, DEFAULT_OPTIONS, options);
 };
 
 const transform = function (bufferAsString, controller) {
