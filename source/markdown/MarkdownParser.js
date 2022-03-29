@@ -555,7 +555,6 @@ const start = function (controller, options = {}) {
                 case STATE.HORIZONTAL_RULE:
                     toPush.push(`<hr>`);
                     controller._refresh();
-                    controller.state = STATE.TEXT;
                     break;
                 case STATE.TEXT:
                     if (inlineOutput) {
@@ -571,7 +570,6 @@ const start = function (controller, options = {}) {
                 case STATE.QUOTE:
                     toPush.push(`<blockquote><p>${inlineOutput}</p></blockquote>`);
                     controller._refresh();
-                    controller.state = STATE.TEXT;
                     break;
                 case STATE.LIST_ITEM_TEXT:
                     controller.items.push(inlineOutput);
