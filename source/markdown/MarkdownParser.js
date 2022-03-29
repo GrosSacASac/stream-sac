@@ -264,7 +264,7 @@ const start = function (controller, options = {}) {
             };
 
             const findClosingSimple = (after, targetC) => {
-                for (let k = after; k < end; k += 1) {
+                for (let k = after + 1; k < end; k += 1) {
                     const { i, c } = controller.indexes[k];
                     if (c === targetC) {
                         return k;
@@ -333,9 +333,9 @@ const start = function (controller, options = {}) {
                     const closingIndex = findClosing(j + 1, `[`, `]`);
                     if (closingIndex !== undefined) {
                         const closingPosition = controller.indexes[closingIndex].i;
-                        const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
+                        const openingParenthese = findClosingSimple(closingIndex, `(`);
                         if (openingParenthese !== undefined && controller.indexes[openingParenthese].i === closingPosition + 1) {
-                            const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
+                            const closingParenthese = findClosingSimple(openingParenthese, `)`);
                             if (closingParenthese !== undefined) {
                                 // regular link
                                 controller.indexes[closingIndex].u = true;
@@ -351,9 +351,9 @@ const start = function (controller, options = {}) {
                                 lastUsed = controller.indexes[closingParenthese].i + 1;
                             }
                         } else {
-                            const openingBracket = findClosingSimple(closingIndex + 1, `[`);
+                            const openingBracket = findClosingSimple(closingIndex, `[`);
                             if (openingBracket !== undefined && controller.indexes[openingBracket].i === closingPosition + 1) {
-                                const closingBracket = findClosingSimple(openingBracket + 1, `]`);
+                                const closingBracket = findClosingSimple(openingBracket, `]`);
                                 if (closingBracket !== undefined) {
                                     // reference link
                                     controller.indexes[closingIndex].u = true;
@@ -369,7 +369,7 @@ const start = function (controller, options = {}) {
                                 }
                             } else {
                                 // reference from a previous link
-                                const colon = findClosingSimple(closingIndex + 1, `:`);
+                                const colon = findClosingSimple(closingIndex, `:`);
                                 if (colon !== undefined && controller.indexes[colon].i === closingPosition + 1) {
                                     const slug = slugify(controller.currentString.substring(i + 1, closingPosition + 1));
                                     htmlOutput = `<a id="${slug}" href="${controller.linkHrefHook(
@@ -396,14 +396,14 @@ const start = function (controller, options = {}) {
 
                     }
                 } else if (c === `!`) {
-                    const openingBracketIndex = findClosingSimple(j + 1, `[`);
+                    const openingBracketIndex = findClosingSimple(j, `[`);
                     if (openingBracketIndex) {
-                        const closingIndex = findClosingSimple(openingBracketIndex + 1, `]`);
+                        const closingIndex = findClosingSimple(openingBracketIndex, `]`);
                         if (closingIndex !== undefined) {
                             const closingPosition = controller.indexes[closingIndex].i;
-                            const openingParenthese = findClosingSimple(closingIndex + 1, `(`);
+                            const openingParenthese = findClosingSimple(closingIndex, `(`);
                             if (openingParenthese !== undefined && controller.indexes[openingParenthese].i === closingPosition + 1) {
-                                const closingParenthese = findClosingSimple(openingParenthese + 1, `)`);
+                                const closingParenthese = findClosingSimple(openingParenthese, `)`);
                                 if (closingParenthese !== undefined) {
                                     // regular image
                                     controller.indexes[closingIndex].u = true;
@@ -452,7 +452,7 @@ const start = function (controller, options = {}) {
                         }
                     } else {
                         // emphasis
-                        const nextStar = findClosingSimple(j + 1, `*`);
+                        const nextStar = findClosingSimple(j, `*`);
                         if (nextStar) {
                             controller.indexes[nextStar].u = true;
                             htmlOutput = `${htmlOutput}<em>${replaceThings(controller._closeInlineStuff(
@@ -486,7 +486,7 @@ const start = function (controller, options = {}) {
                             j += 1;
                         }
                     } else {
-                        const nextStar = findClosingSimple(j + 1, `_`);
+                        const nextStar = findClosingSimple(j, `_`);
                         if (nextStar) {
                             controller.indexes[nextStar].u = true;
                             htmlOutput = `${htmlOutput}<em>${replaceThings(controller._closeInlineStuff(
@@ -516,7 +516,7 @@ const start = function (controller, options = {}) {
                         }
                     }
                     if (!wastriplebacktick) {
-                        const nextBackTick = findClosingSimple(j + 1, `\``);
+                        const nextBackTick = findClosingSimple(j, `\``);
                         if (nextBackTick) {
                             //raw
                             controller.indexes[nextBackTick].u = true;
