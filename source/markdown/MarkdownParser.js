@@ -614,10 +614,7 @@ const start = function (controller, options = {}) {
                     }
 
                     toPush.push(currentInlineString);
-                    controller.state = STATE.TEXT;
-
-                    controller.rawDescription = ``;
-                    controller.closingBackTicks = 0;
+                    controller._refresh();
                     break;
                 case STATE.TABLE:
                     controller.items.push([controller.tableLineStart, i]);
