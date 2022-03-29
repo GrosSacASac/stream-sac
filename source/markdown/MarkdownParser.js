@@ -575,7 +575,6 @@ const start = function (controller, options = {}) {
                     break;
                 case STATE.LIST_ITEM_TEXT:
                     controller.items.push(inlineOutput);
-                    controller._refresh();
                 case STATE.LIST_ITEM_END:
                     const wasOrdered = controller.listTypeOrdered.pop();
                     let listContainerHtml;
@@ -589,8 +588,7 @@ const start = function (controller, options = {}) {
                         toPush.push(`<li>${item}</li>`);
                     });
                     toPush.push(`</${listContainerHtml}>`);
-                    controller.items = [];
-                    controller._refresh();
+                    controller._refreshDeep();
                     controller.state = STATE.TEXT;
                     break;
                 case STATE.UNDERTITLE1:
@@ -848,7 +846,6 @@ const transform = function (bufferAsString, controller) {
                             controller.skipStart += 1;
                         } else if (c === `|`) {
                             controller.state = STATE.TABLE;
-                            controller.items = [];
                             controller.tableLineStart = i - iAdjust;
                         }  else if (c === `<`) {
                             controller.state = STATE.POTENTIAL_HTML;
