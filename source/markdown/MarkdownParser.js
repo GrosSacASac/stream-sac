@@ -675,6 +675,7 @@ const start = function (controller, options = {}) {
                         toPush.push(`</tr>`);
                     });
                     toPush.push(`</tbody></table>`);
+                    controller._refresh();
                     break;
                 default:
                     return;
@@ -1042,8 +1043,12 @@ const transform = function (bufferAsString, controller) {
                     controller.state = STATE.TABLE;
                     controller.tableLineStart = i - iAdjust;
                     break;
+                } else if (isWhitespace(c)) {
+                    break;
                 }
                 controller._closeCurrent(toPush, i - iAdjust);
+                controller.currentString = asString.substr(i);
+                iAdjust = i;
                 break;
             default:
                 throw (`Invalid state ${controller.state}`);
