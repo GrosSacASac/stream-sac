@@ -589,14 +589,12 @@ const start = function (controller, options = {}) {
                     });
                     toPush.push(`</${listContainerHtml}>`);
                     controller._refreshDeep();
-                    controller.state = STATE.TEXT;
                     break;
                 case STATE.UNDERTITLE1:
                 case STATE.UNDERTITLE2:
                 case STATE.TITLE_TEXT:
                     toPush.push(`<h${controller.titleLevel}>${inlineOutput}</h${controller.titleLevel}>`);
                     controller._refresh();
-                    controller.state = STATE.TEXT;
                     break;
                 case STATE.CLOSING_RAW:
                     let classText = ``;
