@@ -1004,8 +1004,8 @@ const transform = function (bufferAsString, controller) {
                     controller.rawDescription = asString.substring(rawDescriptionStart, i);
                     controller.rawDescriptionEnd = i + 1 - iAdjust;
                     controller.state = STATE.RAW;
-                } else if (!isAsciiLetter(c)) {
-                    // not in the description but in the raw text all along
+                } else if (!isAsciiLetter(c) && c !== `\r`) {
+                    // not in the description but in the raw text all along todo test this more
                     for (let q = rawStartedAt; q < rawStartedAt + 3; q += 1) {
                         controller.indexes.push({ c: `\``, i: q - iAdjust });
                     }
