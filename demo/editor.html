@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <title>stream-sac markdown parser</title>
     <meta name="viewport" content="width=device-width">
-    <link rel="stylesheet" href="editor.css">
-    <script type="module" src="editor.js"></script>
+    <link rel="stylesheet" href="./editor.css">
+    <script type="module" src="./editor.js"></script>
 </head>
 <body class="gridcontainer">
 <label class="wmd-panel">
     <span class="biglabel"></span>
     <div id="wmd-button-bar"></div>
-    <textarea name="text" data-element="textarea" data-variable="md" data-function="updatePreview" ${langHtml}
+    <textarea name="text" data-element="textarea" data-variable="md" data-function="updatePreview"
     class="wmd-input" id="wmd-input"># Markdown
 
 Start typing to see the result appearing.
@@ -42,9 +42,9 @@ are composed of
 </textarea>
 </label>
 
-<section data-element="htmlPreviewContainer" data-extension="${extension}" class="htmlPreviewContainer">
+<section data-element="htmlPreviewContainer" class="htmlPreviewContainer">
     <h2>Preview<span data-element="htmlPreviewNote">global TransformStream not supported</span></h2>
-    <div data-element="htmlPreview" ${langHtml}></div>
+    <div data-element="htmlPreview"></div>
 </section>
 
 </body>
