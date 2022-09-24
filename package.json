@@ -12,7 +12,8 @@
     "lint-fix": "eslint --ignore-path .gitignore --fix .",
     "lint": "eslint --ignore-path .gitignore .",
     "bundle": "rollup --config tools/rollup.config.js",
-    "prepublishOnly": "npm t && npm run bundle"
+    "prepublishOnly": "npm t && npm run bundle",
+    "vercel-build": "npm run bundle"
   },
   "dependencies": {
     "@sindresorhus/slugify": "^2.1.0",
