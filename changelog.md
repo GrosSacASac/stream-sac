@@ -10,10 +10,9 @@
 
 ## 2.2.0
 
- * Table alignment
- * Table empty cells
- * Table escaped \|
-
+* Table alignment
+* Table empty cells
+* Table escaped \|
 
 ## 2.1.0
 
@@ -23,11 +22,11 @@ Table support
 
 MarkdownParser split into
 
- * MarkdownParserNode.js import this to have have it like 1.16.0
- * MarkdownParserWeb.js
- * MarkdownParser.js (actual implementation)
- * MardownParserWeb.js cannot be used directly in Deno or Web because it has bare imports
- * add built/MarkdownParserWeb.es.js which has all the imports inlined and can directly be used by Deno or Web
+* MarkdownParserNode.js import this to have have it like 1.16.0
+* MarkdownParserWeb.js
+* MarkdownParser.js (actual implementation)
+* MardownParserWeb.js cannot be used directly in Deno or Web because it has bare imports
+* add built/MarkdownParserWeb.es.js which has all the imports inlined and can directly be used by Deno or Web
 
 ## 1.16.0
 
@@ -45,20 +44,18 @@ Previously  when for example a  `_` is found but not the closing one, we had to 
 
 We still need to call substr to avoid memory overflow
 
- * handle reference links
-
-
+* handle reference links
 
 ## 1.14.0
 
- * Add link href hook
- * Add media hook
- * allows to transform images into audio or video depending on the mime type of the extension
+* Add link href hook
+* Add media hook
+* allows to transform images into audio or video depending on the mime type of the extension
 
 ## 1.13.0
 
- * Handle links in the middle of the text
- * Add highlight option
+* Handle links in the middle of the text
+* Add highlight option
 
 ## 1.6.0
 
