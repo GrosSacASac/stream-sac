@@ -1,6 +1,7 @@
 node_modules
 tests/output/
 built/
-
+demobuilt/
 tests/specification/one.js
 readme1.md
+.parcel-cache/

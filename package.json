@@ -1,10 +1,9 @@
 {
   "name": "stream-sac",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "Utility functions",
   "license": "CC0-1.0",
   "type": "module",
-  "main": "source/html/escapeHtmlStream.js",
   "scripts": {
     "test": "ava",
     "test-one": "ava tests/specification/one.js",
@@ -13,7 +12,8 @@
     "lint": "eslint --ignore-path .gitignore .",
     "bundle": "rollup --config tools/rollup.config.js",
     "prepublishOnly": "npm t && npm run bundle",
-    "vercel-build": "npm run bundle"
+    "build-demo": "parcel build demo/editor.html --dist-dir demobuilt",
+    "vercel-build": "npm run bundle && npm run build-demo"
   },
   "dependencies": {
     "@sindresorhus/slugify": "^2.1.0",
@@ -29,6 +29,7 @@
     "dom99": "^25.0.0",
     "eslint": "^8.4.1",
     "eslint-config-red": "^1.8.2",
+    "parcel": "^2.7.0",
     "rollup": "^2.61.1",
     "utilsac": "^15.2.0"
   },

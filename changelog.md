@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0
+
+* Import from "stream-sac" no longer works (it has no main)
+* This due to the fact that it (stream-sac) has multiple libs inside and making one be the main does not make sense
+* Replace `import {HtmlMinifier} from "stream-sac";`
+* With `import {HtmlMinifier} from "stream-sac/source/html/HtmlMinifier.js";`
+* Demo on vercel available
+
 ## 2.2.0
 
  * Table alignment
