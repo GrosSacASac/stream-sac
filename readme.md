@@ -43,7 +43,7 @@ const htmlStream = new HtmlMinifier({
 
 ## MarkdownParser.js
 
-The input should be valid. Check the demo in the demo/ folder. Deployed at https://stream-sac.vercel.app/editor.html
+The input should be valid. Check the demo in the demo/ folder. Deployed at [stream-sac.vercel.app/editor](https://stream-sac.vercel.app/editor.html)
 
 ```js
 import {
