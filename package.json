@@ -25,9 +25,11 @@
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^13.1.1",
     "ava": "^3.15.0",
+    "dom99": "^25.0.0",
     "eslint": "^8.4.1",
     "eslint-config-red": "^1.8.2",
-    "rollup": "^2.61.1"
+    "rollup": "^2.61.1",
+    "utilsac": "^15.2.0"
   },
   "eslintConfig": {
     "extends": [
