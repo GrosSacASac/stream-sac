@@ -2,8 +2,6 @@
 
 Stream related functions
 
-
-
 ## Installation
 
 [`npm i stream-sac`](https://www.npmjs.com/package/stream-sac)
@@ -45,7 +43,7 @@ const htmlStream = new HtmlMinifier({
 
 ## MarkdownParser.js
 
-The input should be valid. 
+The input should be valid.
 
 ```js
 import {
@@ -91,18 +89,15 @@ import { createMarkdownParserStream } from "https://unpkg.com/stream-sac/built/M
 
 [Complete Example for Deno](./tests/manual/DenoMarkdownParser.js)
 
-
 ## About
 
 ### Logo
 
 ![Put logo here](https://avatars.githubusercontent.com/u/5721194?v=4)
 
-
 ### Changelog
 
 [Changelog](./changelog.md)
-
 
 ### License
 
@@ -110,7 +105,7 @@ import { createMarkdownParserStream } from "https://unpkg.com/stream-sac/built/M
 
 ### Related
 
- - [from2](https://www.npmjs.com/package/from2)
- - [Readable.from](https://nodejs.org/api/stream.html#stream_creating_readable_streams_with_async_generators)
- - [into-stream](https://github.com/sindresorhus/into-stream)
- - [table generator](https://www.tablesgenerator.com/markdown_tables)
+- [from2](https://www.npmjs.com/package/from2)
+- [Readable.from](https://nodejs.org/api/stream.html#stream_creating_readable_streams_with_async_generators)
+- [into-stream](https://github.com/sindresorhus/into-stream)
+- [table generator](https://www.tablesgenerator.com/markdown_tables)
