@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>stream-sac markdown parser</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="editor.css">
+    <script type="module" src="editor.js"></script>
+</head>
+<body class="gridcontainer">
+<label class="wmd-panel">
+    <span class="biglabel"></span>
+    <div id="wmd-button-bar"></div>
+    <textarea name="text" data-element="textarea" data-variable="md" data-function="updatePreview" ${langHtml}
+    class="wmd-input" id="wmd-input"># Markdown
+
+Start typing to see the result appearing.
+
+
+[ref link][1]
+
+## Lists
+
+### Ordered lists
+
+are composed of
+
+1. number
+2. a dot
+3. the text item itself
+
+### Unordered lists
+
+are composed of
+
+* star
+* space
+* the item itself
+
+
+[1]: https://example.com/
+</textarea>
+</label>
+
+<section data-element="htmlPreviewContainer" data-extension="${extension}" class="htmlPreviewContainer">
+    <h2>Preview<span data-element="htmlPreviewNote">global TransformStream not supported</span></h2>
+    <div data-element="htmlPreview" ${langHtml}></div>
+</section>
+
+</body>
+</html>
