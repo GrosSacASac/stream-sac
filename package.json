@@ -1,7 +1,7 @@
 {
   "name": "stream-sac",
   "version": "3.0.1",
-  "description": "Utility functions",
+  "description": "Stream related functions: Html minifier, Markdown parser, concat as stream and streamify a string function.",
   "license": "CC0-1.0",
   "type": "module",
   "scripts": {
