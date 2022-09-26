@@ -7,19 +7,20 @@ import { concatAsStream } from "../../source/concatAsStream.js";
 const readStream = fs.createReadStream(`./readme.md`);
 const readStreamInPromise = fs.createReadStream(`./changelog.md`);
 const promise = Promise.resolve(readStreamInPromise);
-const aString = `zzzzzzzzzzzzzzzzzzzzzzzzzz
+const aString = `Hello love
 `;
+const otherString = `THE END`;
 
 // create
 const concatedStream = concatAsStream([
-    readStream, // readme
-    aString, // zzzz and linebreak
-    promise, // changelog
-    `999`, `888`,
+    readStream, // stream readme
+    aString, // String and linebreak
+    promise, // promise of a stream (changelog)
+    otherString, // String and linebreak
 ]);
 concatedStream.setEncoding(`utf8`);
 
-// output to standard out
+// output to standard out, could also output to http response, file, etc.
 pipeline(concatedStream, process.stdout, (error) => {
     if (error) {
         console.error(error);

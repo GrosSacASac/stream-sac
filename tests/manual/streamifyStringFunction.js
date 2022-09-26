@@ -1,18 +1,25 @@
 import { streamifyStringFunction } from "../../source/streamifyStringFunction.js";
-// import { pipeline } from "node:stream";
 
-const encode = c => {
-    return String.fromCharCode(c.charCodeAt(0) + 1);
+
+// Caesar cipher -only lowercase letters
+const shift = 1;
+const lowera = 97
+const lowerZ = 122;
+const range = lowerZ - lowera + 1;
+const encodeCaesar = s => {
+    return Array.from(s).map(c => {
+        const unicodeNumber = c.charCodeAt(0);
+        if (unicodeNumber >= lowera && unicodeNumber <= lowerZ) {   
+            return String.fromCharCode(((unicodeNumber - lowera + shift) % range) + lowera);
+        }
+        return c;
+    }).join(``);
 };
 
-
-const createCesarEncodeStream = streamifyStringFunction(encode);
+// transforms a function that works with strings into a function that returns a transform stream
+const createCesarEncodeStream = streamifyStringFunction(encodeCaesar);
 const cesarEncodeStream = createCesarEncodeStream();
 cesarEncodeStream.pipe(process.stdout);
-cesarEncodeStream.write(`&`);
-cesarEncodeStream.write(`<`);
-cesarEncodeStream.write(`>`);
-cesarEncodeStream.write(`a`);
-cesarEncodeStream.write(`b`);
-cesarEncodeStream.write(`c`);
-cesarEncodeStream.end();
+cesarEncodeStream.write(`The lazy fox ...`);
+cesarEncodeStream.write(`jumps over !`);
+cesarEncodeStream.end(); // output: Tif mbaz gpy ...kvnqt pwfs !
