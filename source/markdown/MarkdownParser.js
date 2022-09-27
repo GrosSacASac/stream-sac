@@ -48,8 +48,8 @@ const mardkownNoteWorthyCharacters = [
     `#`,
     `=`,
     `:`,
-    // `<`,
-    // `>`,
+    `<`,
+    `>`,
 ];
 
 
@@ -526,7 +526,8 @@ const start = function (controller, options = {}) {
                             lastUsed = controller.indexes[nextBackTick].i + 1;
                         }
                     }
-                } else if (false) {
+                } else if (false && c === `<`) {
+                    findClosingSimple
                 }
             }
             return `${htmlOutput}${replaceThings(escapeHtml(controller.currentString.substring(lastUsed, Math.max(currentStringEnd))), links)}`;
@@ -742,7 +743,7 @@ const transform = function (bufferAsString, controller) {
                 if ((isWhitespace(c) || (!isAsciiLetter(c) && c !== `-`)) && controller.lastCharacter === `<`) {
                     // was not html
                     controller.state = STATE.TEXT;
-                    controller.skipStart -= +5;
+                    controller._noteWorthyCharacters(controller.lastCharacter, i - iAdjust - 1)
                     controller.firstCharcater = false;
                 } else if (c === `>`) {
                     let currentTagName = ``;
