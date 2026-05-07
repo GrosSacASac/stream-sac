@@ -2,7 +2,8 @@ export { concatAsStream };
 
 import { Readable } from "node:stream";
 import MultiStream from "multistream";
-import intoStream from 'into-stream';
+import intoStream from "into-stream";
+
 
 const isStream = (x) => {
     return x && typeof x !== `string` && typeof x.destroy === `function`; 

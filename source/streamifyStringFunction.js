@@ -17,7 +17,6 @@ const streamifyStringFunction = (stringFunction) => {
     
         _transform(string, encoding, done) {
             const { length } = string;
-            // const string;
             let result;
             try {
                 result = stringFunction(String(string));
