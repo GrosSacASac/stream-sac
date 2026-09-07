@@ -87,13 +87,14 @@ const DEFAULT_OPTIONS = {
     highlight: undefined,
     linkHrefHook: identity,
     mediaHook: undefined,
+    linkAttributeString: ``,
 };
 
 // scan for links
 // remove special characters found inside links
 // parse markdown with special characters left
 // plaintext replace detected link with actual links (done inside parsing to avoid messing up reference links)
-const scanForLinks = (plainText, start, stop) => {
+const scanForLinks = (plainText, start, stop, linkAttributeString) => {
     const words = plainText.split(` `);
     return words.reduce((links, word) => {
         if (word.startsWith(`https://`) || word.match(/[a-z]+\.[a-z]+/)?.[0]?.index === 0) {
@@ -104,7 +105,7 @@ const scanForLinks = (plainText, start, stop) => {
                     i: index,
                     iEnd: indexEnd,
                     original: word,
-                    replacement: `<a href="${word}">${word}</a>`,
+                    replacement: `<a href="${word}"${linkAttributeString}>${word}</a>`,
                 });
             }
         }
@@ -187,7 +188,7 @@ const start = function (controller, options = {}) {
             }
 
 
-            const links = scanForLinks(controller.currentString, currentStringStart, currentStringEnd);
+            const links = scanForLinks(controller.currentString, currentStringStart, currentStringEnd, controller.linkAttributeString);
             const removed = removeIndexesInsideLinks(controller.indexes, links);
             end -= removed;
             let htmlOutput = ``;
@@ -341,7 +342,7 @@ const start = function (controller, options = {}) {
                                 controller.indexes[closingIndex].u = true;
                                 htmlOutput = `${htmlOutput}<a href="${controller.linkHrefHook(
                                     controller.currentString.substring(controller.indexes[openingParenthese].i + 1, controller.indexes[closingParenthese].i),
-                                )}">${controller._closeInlineStuff(
+                                )}"${controller.linkAttributeString}>${controller._closeInlineStuff(
                                     i + 1,
                                     controller.indexes[closingIndex].i,
                                     j + 1,
@@ -695,6 +696,9 @@ const start = function (controller, options = {}) {
     controller.currentString = ``;
     controller._refresh();
     Object.assign(controller, DEFAULT_OPTIONS, options);
+    if (controller.linkAttributeString && !controller.linkAttributeString.startsWith(" ")) {
+        controller.linkAttributeString = ` ${controller.linkAttributeString}`;
+    }
 };
 
 const transform = function (bufferAsString, controller) {

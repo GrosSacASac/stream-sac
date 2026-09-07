@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0
+
+### Markdown parser
+
+* Add linkAttributeString option, to add to all external links. For example  target="_blank" to make every link open in a new tab, nofollow, referrerpolicy etc. Check https://www.w3schools.com/tags/tag_a.asp 
+
 ## 3.0.0
 
 * Import from "stream-sac" no longer works (it has no main)

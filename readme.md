@@ -73,7 +73,8 @@ const markdownStream = new MarkdownParser({
             return "#";
         }
         return src;
-    }
+    },
+    linkAttributeString: "", // or `target="_blank"`
 });
 ```
 

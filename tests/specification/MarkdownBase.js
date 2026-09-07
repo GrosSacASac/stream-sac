@@ -161,6 +161,23 @@ test(`link`, async t => {
     // t.is(forceBuffer.includes(`<a href="${linkTarget}">${linkText}</a>`), true);
 });
 
+test(`link change attribute`, async t => {
+    const customAttribute = `data-custom="45"`;
+    const markdownParser = new MarkdownParser({
+        linkAttributeString: customAttribute,
+    });
+    const linkTarget = `https://example.com/`;
+    const linkText = `example`;
+    concatAsStream([`[${linkText}](${linkTarget})`]).pipe(markdownParser);
+
+    let forceBuffer = ``;
+    markdownParser.on(`data`, (x) => {
+        forceBuffer = `${forceBuffer}${x}`;
+    });
+    await finished(markdownParser);
+    t.is(forceBuffer, (`<p><a href="${linkTarget}" ${customAttribute}>${linkText}</a></p>`));
+});
+
 test(`reference link`, async t => {
     const markdownParser = new MarkdownParser();
     const linkTarget = `https://example.com/`;
