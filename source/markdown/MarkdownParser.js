@@ -636,11 +636,11 @@ const start = function (controller, options = {}) {
                         line.split(`|`).map(tabledata => {
                             return tabledata.trim();
                         }).filter(Boolean).forEach(alignpattern => {
-                            if (alignpattern.startsWith(":") && alignpattern.endsWith(":")) {
+                            if (alignpattern.startsWith(`:`) && alignpattern.endsWith(`:`)) {
                                 alignments.push(` style="text-align: center"`);
-                            } else if (alignpattern.startsWith(":")) {
+                            } else if (alignpattern.startsWith(`:`)) {
                                 alignments.push(` style="text-align: left"`);
-                            } else if (alignpattern.endsWith(":")) {
+                            } else if (alignpattern.endsWith(`:`)) {
                                 alignments.push(` style="text-align: right"`);
                             } else {
                                 alignments.push(``);
@@ -696,7 +696,7 @@ const start = function (controller, options = {}) {
     controller.currentString = ``;
     controller._refresh();
     Object.assign(controller, DEFAULT_OPTIONS, options);
-    if (controller.linkAttributeString && !controller.linkAttributeString.startsWith(" ")) {
+    if (controller.linkAttributeString && !controller.linkAttributeString.startsWith(` `)) {
         controller.linkAttributeString = ` ${controller.linkAttributeString}`;
     }
 };

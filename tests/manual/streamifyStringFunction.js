@@ -3,7 +3,7 @@ import { streamifyStringFunction } from "../../source/streamifyStringFunction.js
 
 // Caesar cipher -only lowercase letters
 const shift = 1;
-const lowera = 97
+const lowera = 97;
 const lowerZ = 122;
 const range = lowerZ - lowera + 1;
 const encodeCaesar = s => {
