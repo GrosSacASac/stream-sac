@@ -16,9 +16,9 @@
     "vercel-build": "npm run bundle && npm run build-demo"
   },
   "dependencies": {
-    "@sindresorhus/slugify": "^2.1.0",
+    "@sindresorhus/slugify": "^3.0.1",
     "html-escaper": "^3.0.3",
-    "into-stream": "^7.0.0",
+    "into-stream": "^9.1.0",
     "is-whitespace-character": "^2.0.1",
     "multistream": "^4.1.0"
   },
