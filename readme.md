@@ -15,7 +15,7 @@ The input should be valid. Optional pass jsMinifier and cssMinifier to minify in
 
 ```js
 import fs from "node:fs";
-import { pipeline } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import {
     HtmlMinifier,
 } from "stream-sac/source/html/HtmlMinifier.js";
@@ -29,16 +29,11 @@ const htmlMinifier = new HtmlMinifier({
 });
 htmlMinifier.setEncoding(`utf8`);
 
-pipeline(
+await pipeline(
     fs.createReadStream(source),
     htmlMinifier,
     fs.createWriteStream(destination),
-    (error) => {
-    if (error) {
-        console.error(error);
-    }
-});
-
+);
 ```
 
 ## MarkdownParser.js

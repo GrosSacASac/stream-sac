@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { pipeline } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { HtmlMinifier } from "../../source/html/HtmlMinifier.js";
 
 
@@ -13,13 +13,9 @@ htmlMinifier.setEncoding(`utf8`);
 
 console.time(`time`);
 
-pipeline(
+await pipeline(
     fs.createReadStream(source),
     htmlMinifier,
     fs.createWriteStream(destination),
-    (error) => {
-    console.timeEnd(`time`);
-    if (error) {
-        console.error(error);
-    }
-});
+);
+console.timeEnd(`time`);
